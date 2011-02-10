@@ -1,6 +1,6 @@
 /*
     Audio Scout - audio content indexing software
-    Copyright (C) 2010  D. Grant Starkweather
+    Copyright (C) 2010  D. Grant Starkweather & Evan Klinger
     
     Audio Scout is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    D. Grant Starkweather - starkd88@gmail.org, dstarkweather@phash.org
+    D. Grant Starkweather - dstarkweather@phash.org
+    Evan Klinger          - eklinger@phash.org
 */
 
 #include <string.h>
