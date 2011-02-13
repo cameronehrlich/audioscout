@@ -1,3 +1,0 @@
-// configured options for AudioScout
-#define AudioScout_VERSION_MAJOR @AudioScout_VERSION_MAJOR@
-#define AudioScout_VERSION_MINOR @AudioScout_VERSION_MINOR@
