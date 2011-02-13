@@ -12,7 +12,6 @@ configure_file(
 
 include_directories("${PROJECT_BINARY_DIR}")
 
-
 add_library(table STATIC table.c table.h table_loc.h)
 
 add_executable(table_t table_t.c table.h)
