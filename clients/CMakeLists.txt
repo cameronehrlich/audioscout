@@ -35,3 +35,7 @@ add_executable(auscout  auscout-client-main.cpp
                         SendThread.cpp ${MOC2} 
                         MeterWidget.cpp ${MOC3})
 target_link_libraries(auscout AudioData pHashAudio zmq ${QT_LIBRARIES})
+
+install(TARGETS auscout DESTINATION bin)
+install(TARGETS auscoutclient DESTINATION bin)
+
