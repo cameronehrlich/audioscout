@@ -1,14 +1,40 @@
+cmake_minimum_required(VERSION 2.6)
+project(pHashAudio)
+
+set(pHashAudio_VERSION_MAJOR 1)
+set(pHashAudio_VERSION_MINOR 0)
+
+
 add_subdirectory(table-4.3.0phmodified)
 
-add_library(AudioData audio_data.c)
-target_link_libraries(AudioData sndfile samplerate mpg123)
 
-add_library(pHashAudio phash_audio.c fft.c complex.c)
+find_library(HAVE_MPG123 mpg123)
+find_library(HAVE_SNDFILE sndfile)
+find_library(HAVE_SAMPLERATE samplerate)
+
+configure_file(
+  "${PROJECT_SOURCE_DIR}/pHashAudioConfig.h.in"
+  "${PROJECT_BINARY_DIR}/pHashAudioConfig.h"
+)
+
+include_directories("${PROJECT_BINARY_DIR}")
+
+link_directories("${PROJECT_BINARY_DIR}/table-4.3.0phmodified")
+
+add_library(pHashAudio phash_audio.c phash_audio.h fft.c fft.h complex.c complex.h)
+target_link_libraries(pHashAudio table)
+
+if (HAVE_MPG123)
+  set(EXTRA_LIBS ${EXTRA_LIBS} mpg123)
+endif(HAVE_MPG123)
 
 
-add_executable(auscout auscout.c)
+add_library(AudioData audiodata.c audiodata.h pHashAudioConfig.h)
+target_link_libraries(AudioData sndfile samplerate ${EXTRA_LIBS})
 
-add_executable(tblservd table_server.c)
-target_link_libraries(tblservd pHashAudio)
 
-add_executable(metadatadb metadatadb.c)
+install(TARGETS pHashAudio DESTINATION lib)
+install(FILES phash_audio.h DESTINATION include)
+
+install(TARGETS AudioData  DESTINATION lib)
+install(FILES audiodata.h DESTINATION include)

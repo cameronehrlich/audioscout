@@ -23,6 +23,7 @@
 #define _AUDIODATA_H
 
 #include <stdint.h>
+#include "pHashAudioConfig.h"
 
 #if defined(BUILD_DLL)
 #define AUDIODATA_EXPORT __declspec(dllexport)
