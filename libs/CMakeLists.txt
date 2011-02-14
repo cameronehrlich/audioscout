@@ -4,6 +4,7 @@ project(pHashAudio)
 set(pHashAudio_VERSION_MAJOR 1)
 set(pHashAudio_VERSION_MINOR 0)
 
+add_definitions("-g -O3 -shared -fPIC")
 
 add_subdirectory(table-4.3.0phmodified)
 
@@ -21,7 +22,8 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 link_directories("${PROJECT_BINARY_DIR}/table-4.3.0phmodified")
 
-add_library(pHashAudio phash_audio.c phash_audio.h fft.c fft.h complex.c complex.h)
+
+add_library(pHashAudio SHARED phash_audio.c phash_audio.h fft.c fft.h complex.c complex.h)
 target_link_libraries(pHashAudio table)
 
 if (HAVE_MPG123)
@@ -29,7 +31,7 @@ if (HAVE_MPG123)
 endif(HAVE_MPG123)
 
 
-add_library(AudioData audiodata.c audiodata.h pHashAudioConfig.h)
+add_library(AudioData SHARED audiodata.c audiodata.h pHashAudioConfig.h)
 target_link_libraries(AudioData sndfile samplerate ${EXTRA_LIBS})
 
 
