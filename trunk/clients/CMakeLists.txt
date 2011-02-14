@@ -36,6 +36,12 @@ add_executable(auscout  auscout-client-main.cpp
                         MeterWidget.cpp ${MOC3})
 target_link_libraries(auscout AudioData pHashAudio zmq ${QT_LIBRARIES})
 
+set(PERMS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+          GROUP_READ GROUP_EXECUTE 
+          WORLD_READ WORLD_EXECUTE)
+
 install(TARGETS auscout DESTINATION bin)
+install(FILES Microphone-icon.png DESTINATION bin)
+install(FILES auscout-gui DESTINATION bin PERMISSIONS ${PERMS})
 install(TARGETS auscoutclient DESTINATION bin)
 
