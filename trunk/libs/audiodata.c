@@ -70,6 +70,8 @@ void free_mdata(AudioMetaData *mdata){
   return;
 }
 
+#ifdef HAVE_MPG123
+
 void get_v1_data(mpg123_id3v1 *v1, AudioMetaData *mdata){
 
   char tmp[64];
@@ -166,8 +168,6 @@ void get_v2_data(mpg123_id3v2 *v2, AudioMetaData *mdata){
   }
   return;
 }
-
-#ifdef HAVE_MPG123
 
 float* readaudio_mp3(const char *filename,long *sr, unsigned int *buflen,\
 		     const float nbsecs, AudioMetaData *mdata, int *error){

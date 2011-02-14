@@ -20,6 +20,4 @@ target_link_libraries(table_t table)
 add_executable(table_util table_util.c table.h)
 target_link_libraries(table_util table)
 
-install(TARGETS table DESTINATION lib)
-install(FILES table.h DESTINATION include)
 
