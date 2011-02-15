@@ -18,7 +18,6 @@ set(QT_USE_QTMULTIMEDIA TRUE)
 include(${QT_USE_FILE})
 
 set(QT_LIBRARIES "${QT_LIBRARIES};${QT_LIBRARY_DIR}/libQtMultimedia.so")
-message(STATUS "QT_LIBRARIES - ${QT_LIBRARIES}")
 
 set(SOURCES 
      mainwindow.h
@@ -29,6 +28,8 @@ set(SOURCES
 QT4_WRAP_CPP(MOC1 mainwindow.h OPTIONS)
 QT4_WRAP_CPP(MOC2 SendThread.h OPTIONS)
 QT4_WRAP_CPP(MOC3 MeterWidget.h OPTIONS)
+
+configure_file(auscout-gui "${PROJECT_BINARY_DIR}/auscout-gui" COPY_ONLY)
 
 add_executable(auscout  auscout-client-main.cpp 
                         mainwindow.cpp ${MOC1} 

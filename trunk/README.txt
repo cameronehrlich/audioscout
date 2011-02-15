@@ -1,7 +1,7 @@
 Audio Scout content indexing software
 version 1.0.0
-creator: D. Grant Starkweather
-constact: starkd88@gmail.com, dstarkweather@phash.org
+creator: D. Grant Starkweather & Evan Klinger
+contact: dstarkweather@phash.org, eklinger@phash.org
 
 
 BACKGROUND
@@ -13,48 +13,33 @@ BACKGROUND
 INSTALLATION:
 -----------------------------------------------------------------------
 
-To build the libraries:
+   Use the cmake build system. From the top level directory:
 
-   make libs
+     cd ./build
+     cmake ../.
+     make all
+     sudo make install
 
-To build the test programs to test the libraries:
+   This should build the libraries, the servers, the client application (both
+   console and qt gui) and the driver and test programs.
 
-   make test
-
-To build the utility program:
-
-   make utility 
-
-To build the server programs:
-
-   make servers
-
-To build the driver test programs to test the servers:
-
-   make drivers
-
-To build the gui client application: (Make sure qt's binary tools are on your PATH)
-
-   make clients
-
-To build all:
-
-   make all
-
-To install:
-
-   make install
-
-   You may want to change the destination directory in the Makefile.
-
-   There is a Makefile.windows32 file for building on windows through
-   mingw environment.  Currently, only the pHashAudio and AudioData libs
-   can be built on windows.
+   NOTE: In order for cmake to recognize Qt4 installation, the bin directory in
+   which qmake program is installed might have to be on the system PATH.
 
 
-   NOTE: for cross-compiling, you may need to install a mock endian.h file to 
-   define the BYTE_ORDER macro for the endianness of the machine.  
+   Files:
 
+   /libs - source code for the AudioData and pHashAudio libraries.
+
+   /clients - source code for a console based client app (auscout-client.c)
+              and a qt gui app.
+
+   /servers - source code for the server programs (auscoutd, tblservd, metadatadb)
+
+   /tests   - source code for test programs and driver programs to test the server
+              performance.
+
+   /docs    - audioscoutm.pdf manual
 
 INSTRUCTIONS
 -----------------------------------------------------------------------
@@ -129,47 +114,6 @@ INSTRUCTIONS
                  you want to send and click the 'hash & send' button when you are ready.
          
    
-
-
-DESCRIPTION OF FILES:
------------------------------------------------------------------------
-
-audioscoutm.pdf - introduction and testing information.
-
-Files for pHashAudio and AudioData lib's:
-
-audiodata.c/.h  
-phash_audio.c/.h 
-                 
-
-audio_index.c - utility program to build, query and stat an index file
-                directly rather than through the audio scout server.
-
-audiodb.sql - sql schema to create a sqlite3 database for audio metadata.
-
-
-Files for auscoutd server, tblservd server and metadatadb server:
-
-auscout.c      
-table_server.c
-metadatadb.c 
-
-auscout-client.c - console program to send querys and submissions to audio scout server
-
-Files for gui client application:
-
-mainwindow.c/.h          - subclass of QMainWindow
-auscout-client-main.cpp  - main entry 
-auscout-client-main.pro  - file for qt's qmake program
-SenderThread.cpp/.h      - subclass of QThread
-
-Files for driver programs to test the servers individually:
-
-auscout-driver.c 
-auscout-sink.c
-metadatadb-driver.c
-retrieve-client.c
-
 
 REQUISITE SOFTWARE
 -----------------------------------------------------------------------

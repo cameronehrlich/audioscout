@@ -44,9 +44,10 @@ int main(int argc, char **argv){
   float nbsecs = 30.0f; /* full audio */ 
   int sr = 5512;
   len = buflen;
+  int error;
 
   printf("testing  %s @ sr %d, for %f seconds...\n", testfile, sr, nbsecs);
-  buf = readaudio(testfile, sr, sigbuf, &len, nbsecs, &mdata);
+  buf = readaudio(testfile, sr, sigbuf, &len, nbsecs, &mdata, &error);
   assert(buf);
   assert(len == 165359 || len == 165360);
   assert(mdata.title2);
@@ -65,7 +66,7 @@ int main(int argc, char **argv){
   len = buflen;
 
   printf("testing %s @ sr = %d, for %f seconds...\n", testfile, sr, nbsecs);
-  buf = readaudio(testfile, sr, sigbuf, &len, nbsecs, &mdata);
+  buf = readaudio(testfile, sr, sigbuf, &len, nbsecs, &mdata, &error);
   assert(buf);
   assert(len == 479999 || len == 480000);
   printf("ok\n");
@@ -80,7 +81,7 @@ int main(int argc, char **argv){
   len = buflen;
 
   printf("testing %s @ sr = %d for %f seconds...\n", testfile, sr, nbsecs);
-  buf = readaudio(testfile, sr, sigbuf, &len, nbsecs, &mdata);
+  buf = readaudio(testfile, sr, sigbuf, &len, nbsecs, &mdata, &error);
   assert(buf);
   assert(len == 671771);
   printf("ok\n");
