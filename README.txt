@@ -15,7 +15,6 @@ INSTALLATION:
 
    Use the cmake build system. From the top level directory:
 
-     mkdir build
      cd ./build
      cmake ../.
      make all
