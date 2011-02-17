@@ -1,5 +1,5 @@
 Audio Scout content indexing software
-version 1.0.0
+version 1.0.1
 creator: D. Grant Starkweather & Evan Klinger
 contact: dstarkweather@phash.org, eklinger@phash.org
 
@@ -15,6 +15,7 @@ INSTALLATION:
 
    Use the cmake build system. From the top level directory:
 
+     mkdir build
      cd ./build
      cmake ../.
      make all
