@@ -1,0 +1,5 @@
+#summary Get support for AudioScout
+
+= Contact =
+
+Send questions or comments to <a href="mailto:support@phash.org">support@phash.org</a>
