@@ -733,7 +733,7 @@ int main(int argc, char **argv){
 	syslog(LOG_CRIT,"MAIN ERROR: unable to create queue thread");
 	exit(1);
     }
-
+    
     snprintf(pub_addr, 32, "tcp://*:%d", GlobalArgs.port+2);
     DevParam dp_fwder;
     dp_fwder.ctx = ctx;
@@ -752,6 +752,8 @@ int main(int argc, char **argv){
 	exit(1);
     }
 
+    sleep(1);
+
     pthread_t worker_thr;
     WorkerParam *wp;
     for (i=0;i < GlobalArgs.nbthreads;i++){
@@ -763,6 +765,8 @@ int main(int argc, char **argv){
 	    exit(1);
 	}
     }
+
+    sleep(1);
 
     /* result loop */
     result_listener(ctx);
