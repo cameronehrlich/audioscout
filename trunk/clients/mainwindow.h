@@ -23,7 +23,7 @@
 #define _MAINWINDOW_H_
 #include <QtGui>
 #include <QtCore>
-#include <QtMultimedia/QtMultimedia>
+#include <QtMultimediaKit/QtMultimediaKit>
 #include <zmq.hpp>
 #include "SendThread.h"
 #include "MeterWidget.h"
