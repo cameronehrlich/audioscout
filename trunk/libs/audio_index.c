@@ -26,11 +26,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
-#include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <getopt.h>
 #include <locale.h>
 #include <sndfile.h>
@@ -39,6 +37,9 @@
 #include "serialize.h"
 #include "phash_audio.h"
 #include "audiodata.h"
+#include <unistd.h>
+#include <dirent.h>
+
 
 struct globalargs_t {
     char *cmd;        /* build|combine|info|query|queryd */ 

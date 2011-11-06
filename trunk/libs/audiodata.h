@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "pHashAudioConfig.h"
 
+
 #if defined(BUILD_DLL)
 #define AUDIODATA_EXPORT __declspec(dllexport)
 #elif defined(BUILD_EXE)
@@ -32,7 +33,6 @@
 #else  
 #define AUDIODATA_EXPORT
 #endif
-
 
 typedef void* AudioDataDB;
 
@@ -53,7 +53,7 @@ typedef struct  ametadata_t {
 /* errors for readaudio function */
 /* if value of error is < 1000, it is an error from mpg123 (look in mpg123.h for error code) */
 /* if value is 0 or >= 1000, then follow this enum */ 
-
+AUDIODATA_EXPORT
 enum ph_phashaudio_error {
   PHERR_SUCCESS = 0, 
   PHERR_NULLARG = 1000,
@@ -73,7 +73,6 @@ enum ph_phashaudio_error {
  * init_mdata
  * initialize AudioMetaData struct to all zeros
  **/ 
-
 AUDIODATA_EXPORT
 void init_mdata(AudioMetaData *mdata);
 
@@ -81,7 +80,6 @@ void init_mdata(AudioMetaData *mdata);
  * free_mdata
  * release all memory allocated to fields and zero out.
  **/ 
-
 AUDIODATA_EXPORT
 void free_mdata(AudioMetaData *mdata);
 
@@ -97,10 +95,17 @@ void free_mdata(AudioMetaData *mdata);
  * PARAM error - ptr to int value of error code (0 for success)
  * RETURN float buffer for signal, NULL if error
  **/
-
 AUDIODATA_EXPORT
 float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int *buflen,\
 		 const float nbsecs, AudioMetaData *mdata, int *error);
+
+/**
+ * get a context point for a zeromq session 
+ * PARAM  - n int number of io threads
+ * RETURN - void ptr context pointer
+ **/
+AUDIODATA_EXPORT
+void* get_context(int n);
 
 /**
  * open_audiodata_db
@@ -142,5 +147,8 @@ char* retrieve_audiodata(AudioDataDB mdatastore, uint32_t id);
 
 AUDIODATA_EXPORT
 int metadata_to_inlinestr(AudioMetaData *mdata, char *str, int len);
+
+AUDIODATA_EXPORT
+void audiodata_free(void *ptr);
 
 #endif
