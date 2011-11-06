@@ -22,23 +22,21 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include "./table-4.3.0phmodified/table.h"
 #include "fft.h"
 #include "phash_audio.h"
-
-#ifdef unix
 #include <stdio.h>
+
+#ifdef __unix__
+#include <dirent.h>
+#include <unistd.h>
 #endif
 
 
-
 #ifndef JUST_AUDIOHASH
-
 
 PHASH_EXPORT
 AudioIndex open_audioindex(const char *idx_file, int add, int nbbuckets){
@@ -77,25 +75,26 @@ AudioIndex open_audioindex(const char *idx_file, int add, int nbbuckets){
 PHASH_EXPORT
 int merge_audioindex(const char *dst_idxfile, const char *src_idxfile){
     /* merge table in src_idxfile into dst_idxfile - clear source */ 
-    int ret = 0;
+    int ret = 0, err, nb_bkts, nb_entries, key_size, data_size;
+    struct stat src_info;
+    table_t *srctbl, *dsttbl;
+    void *pkey, *pdata;
+    table_linear_t linear_st;
+
     if (!dst_idxfile || !src_idxfile) return -1;
-    
-    int err;
-    struct stat src_info, dst_info;
     stat(src_idxfile, &src_info);
 
     if (!stat(src_idxfile, &src_info) && src_info.st_size > 0) {
 	/* open source  table */
-	table_t *srctbl = open_audioindex(src_idxfile, 1, 0);
+	srctbl = open_audioindex(src_idxfile, 1, 0);
 	if (srctbl == NULL) return -3;
 	table_attr(srctbl, 0);
 
-	int nb_bkts, nb_entries;
 	err = table_info(srctbl, &nb_bkts, &nb_entries);
 	
 	if (nb_entries > 0){
 	    /* open destination table */
-	    table_t *dsttbl = open_audioindex(dst_idxfile, 1, 0);
+	    dsttbl = open_audioindex(dst_idxfile, 1, 0);
 	    if (dsttbl == NULL) {
 		table_free(srctbl);
 		return -2;
@@ -103,9 +102,6 @@ int merge_audioindex(const char *dst_idxfile, const char *src_idxfile){
 	    table_attr(dsttbl, 0);
 
 	    /* do merge */
-	    void *pkey, *pdata;
-	    int key_size, data_size;
-	    table_linear_t linear_st;
 	    err = table_first_r(srctbl, &linear_st, &pkey, &key_size, &pdata, &data_size);
 	    while (err == TABLE_ERROR_NONE){
 		err = table_insert_kd(dsttbl, pkey, key_size, pdata, data_size, NULL, NULL, 0);
@@ -146,16 +142,15 @@ PHASH_EXPORT
 int insert_into_audioindex(AudioIndex audio_index, uint32_t id, uint32_t *hash, int nbframes){
 	const char ovrwrt = 0;
 	TableValue entry;
-	entry.id = id;
+	int err, i;
 
-	unsigned int i;
-	int error;
+	entry.id = id;
 	for (i=0;i<nbframes;i++){
 	    entry.pos = (uint32_t)i;
-	    error = table_insert_kd((table_t*)audio_index,&(hash[i]),sizeof(uint32_t), \
+	    err = table_insert_kd((table_t*)audio_index,&(hash[i]),sizeof(uint32_t), \
                                     &entry,sizeof(TableValue),\
                                     NULL, NULL, ovrwrt);
-	    if (error != TABLE_ERROR_NONE && error != TABLE_ERROR_OVERWRITE){
+	    if (err != TABLE_ERROR_NONE && err != TABLE_ERROR_OVERWRITE){
 		return -1;
 	    }
 	}
@@ -179,10 +174,11 @@ int flush_audioindex(AudioIndex audio_index, const char *filename){
 
 PHASH_EXPORT
 int grow_audioindex(AudioIndex audio_index, const float load){
-
     int nbbuckets, nbentries, error;
+    double current_load;
+
     stat_audioindex(audio_index, &nbbuckets, &nbentries);
-    double current_load = (double)nbentries/(double)nbbuckets;
+    current_load = (double)nbentries/(double)nbbuckets;
     if (current_load > load) {
 	error = table_adjust((table_t*)audio_index, 0); /* adjust to number of entries */ 
     }
@@ -191,6 +187,8 @@ int grow_audioindex(AudioIndex audio_index, const float load){
 }
 
 #endif /* JUST_AUDIOHASH */ 
+
+#ifndef _WIN32
 
 PHASH_EXPORT
 char** readfilenames(const char *dirname,unsigned int *nbfiles){
@@ -237,23 +235,26 @@ char** readfilenames(const char *dirname,unsigned int *nbfiles){
     return files;
 }
 
+#endif /* _WIN32 */
+
 static
 void sort_barkdiffs(double *barkdiffs,uint8_t *bits,unsigned int length){
-
-    int i,j;
-    for (i=0;i<length;i++){
-	int min = i;
-	for (j=i+1;j<length;j++){
+    int i,j, min;
+    double tmpd;
+    uint8_t tmpb;
+    for (i=0;i<(int)length;i++){
+	min = i;
+	for (j=i+1;j<(int)length;j++){
 	    if (barkdiffs[j] < barkdiffs[min])
 		min = j;
 	}
 	if (i != min){
-	    double tmpd = barkdiffs[i];
+	    tmpd = barkdiffs[i];
 
 	    barkdiffs[i] = barkdiffs[min];
 	    barkdiffs[min] = tmpd;
 
-	    uint8_t tmpb = bits[i];
+	    tmpb = bits[i];
 	    bits[i] = bits[min];
 	    bits[min] = tmpb;
 	}
@@ -281,12 +282,12 @@ void ph_free(void * ptr){
 
 PHASH_EXPORT
 void ph_hashst_free(AudioHashStInfo *ptr){
+  unsigned int i;
   if (ptr->window){
     free(ptr->window);
     ptr->window = NULL;
   }
   if (ptr->wts){
-    unsigned int i;
     for (i = 0; i < nfilts; i++){
       free(ptr->wts[i]);
     }
@@ -300,19 +301,25 @@ PHASH_EXPORT
 int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_toggles,\
               unsigned int *nbcoeffs, unsigned int *nbframes, double *minB, double *maxB,\
               unsigned int buflen, unsigned int P, int sr, AudioHashStInfo *hash_st){
-
-  unsigned int i, j;
+  int msbpos, index;
+  unsigned int i, j, m, ideal_fl, upper_fl, lower_fl, nfft, nfft_half, N, framelength, \
+                            start, end, overlap, advance;
+  const double maxfreq = 3000;
+  double *binbarks, temp, lof, hif, bark_diff, f_bark_mid;
+  double *window, **wts, *frame, *magnF, *barkdiffs, **barkcoeffs;
+  double max_bark, min_bark, maxF, H, mdouble;
+  PHComplex *pF;
+  uint8_t *tmptoggles;
+  uint32_t *hash, hashtmp;
 
   if (buf == NULL || phash == NULL || nbframes == NULL || hash_st == NULL) return -1;
 
   if (sr != hash_st->sr){ 
-    const double maxfreq = 3000;
-
-    unsigned int ideal_fl = (unsigned int)(0.4*sr);
-    int msbpos = 0;
+    ideal_fl = (unsigned int)(0.4*sr);
+    msbpos = 0;
     while (ideal_fl >> msbpos++);
-    unsigned int upper_fl = 1 << (msbpos-1);
-    unsigned int lower_fl = 1 << (msbpos-2);
+    upper_fl = 1 << (msbpos-1);
+    lower_fl = 1 << (msbpos-2);
     hash_st->framelength = (upper_fl - lower_fl) < (ideal_fl - lower_fl) ? upper_fl :lower_fl;
 
     hash_st->sr = sr;
@@ -324,59 +331,58 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
       hash_st->window[i] = 0.54 - 0.46*cos(2*PI*i/(hash_st->framelength-1));
     }
 
-    unsigned int nfft_half = hash_st->framelength/2;
-    double *binbarks = (double*)malloc(nfft_half*sizeof(double));
+    nfft_half = hash_st->framelength/2;
+    binbarks = (double*)malloc(nfft_half*sizeof(double));
     if (binbarks == NULL) return -1;
 
-    double temp;
+    temp;
     for (i=0; i < nfft_half;i++){
       temp = i*maxfreq/nfft_half/600.0;
       binbarks[i] = 6*log(temp + sqrt(temp*temp + 1.0));
     }
     
-    double lof, hif;
     hash_st->wts = (double**)malloc(nfilts*sizeof(double*));
     for (i=0;i < nfilts;i++){
       hash_st->wts[i] = (double*)malloc(nfft_half*sizeof(double));
       /*calculate wts for each filter */
-      double f_bark_mid = barkfreqs[i]/600.0;
+      f_bark_mid = barkfreqs[i]/600.0;
       f_bark_mid = 6*log(f_bark_mid + sqrt(f_bark_mid*f_bark_mid + 1.0));
       for (j=0;j < nfft_half ;j++){
-	double barkdiff = binbarks[j] - f_bark_mid;
-	lof = -2.5*(barkdiff/barkwidth - 0.5);
-	hif = barkdiff/barkwidth + 0.5;
-	double m = lof < hif ? lof : hif;
-	m = (m < 0) ? m : 0; 
-	m = pow(10,m);
-	hash_st->wts[i][j] = m;
+	bark_diff = binbarks[j] - f_bark_mid;
+	lof = -2.5*(bark_diff/barkwidth - 0.5);
+	hif = bark_diff/barkwidth + 0.5;
+	mdouble = lof < hif ? lof : hif;
+	mdouble = (mdouble < 0) ? mdouble : 0; 
+	mdouble = pow(10,mdouble);
+	hash_st->wts[i][j] = mdouble;
       }
     } 
     free(binbarks);
   }
 
-  unsigned int N = buflen; 
-  unsigned int framelength = hash_st->framelength;
-  unsigned int nfft = framelength;
-  unsigned int nfft_half = (hash_st->framelength)/2;
-  unsigned int start = 0;
-  unsigned int end = start + hash_st->framelength - 1;
-  unsigned int overlap = 31*(hash_st->framelength)/32;
-  unsigned int advance = hash_st->framelength - overlap;
+  N = buflen; 
+  framelength = hash_st->framelength;
+  nfft = framelength;
+  nfft_half = (hash_st->framelength)/2;
+  start = 0;
+  end = start + hash_st->framelength - 1;
+  overlap = 31*(hash_st->framelength)/32;
+  advance = hash_st->framelength - overlap;
 
-  *nbframes = floor(N/advance) - floor(framelength/advance) + 1;
+  *nbframes = (unsigned int)(floor(N/advance) - floor(framelength/advance) + 1);
   
-  double *window = hash_st->window;
-  double **wts = hash_st->wts;
+  window = hash_st->window;
+  wts = hash_st->wts;
 
-  double *frame = (double*)malloc((framelength)*sizeof(double));
-  Complex *pF = (Complex*)malloc(sizeof(Complex)*(nfft));
-  double *magnF = (double*)malloc((nfft_half)*sizeof(double));
+  frame = (double*)malloc((framelength)*sizeof(double));
+  pF = (PHComplex*)malloc(sizeof(PHComplex)*(nfft));
+  magnF = (double*)malloc((nfft_half)*sizeof(double));
 
 
   if (coeffs && nbcoeffs) *nbcoeffs = nfilts;
 
-  double *barkdiffs = (double*)malloc((nfilts-1)*sizeof(double));
-  uint8_t *tmptoggles = (uint8_t*)malloc((nfilts-1)*sizeof(uint8_t));
+  barkdiffs = (double*)malloc((nfilts-1)*sizeof(double));
+  tmptoggles = (uint8_t*)malloc((nfilts-1)*sizeof(uint8_t));
   if (P > 0 && bit_toggles){
     *bit_toggles = (uint8_t**)malloc((*nbframes)*sizeof(uint8_t*));
     for (j=0;j < *nbframes;j++){
@@ -384,16 +390,16 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
     }
   }
 
-  double **barkcoeffs = (double**)malloc((*nbframes)*sizeof(double*));
+  barkcoeffs = (double**)malloc((*nbframes)*sizeof(double*));
   for (i=0;i < *nbframes;i++){
     barkcoeffs[i] = (double*)malloc((nfilts)*sizeof(double));
   }
   if (coeffs && nbcoeffs) *coeffs = barkcoeffs;
 
-   int index = 0;
-   double max_bark = 0.0;
-   double min_bark = 100000000.0;
-   double maxF = 0.0;
+   index = 0;
+   max_bark = 0.0;
+   min_bark = 100000000.0;
+   maxF = 0.0;
    while (end < N){
        maxF = 0.0;
        for (i = 0;i<framelength;i++){
@@ -430,15 +436,12 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
    if (minB) *minB = min_bark;
    if (maxB) *maxB = max_bark;
 
-    uint32_t *hash = (uint32_t*)malloc((*nbframes)*sizeof(uint32_t));
+    hash = (uint32_t*)malloc((*nbframes)*sizeof(uint32_t));
     *phash = hash;
     for (i=0;i < *nbframes;i++){
-	uint32_t hashtmp = 0;
-	unsigned int m;
+	hashtmp = 0;
 
 	for (m=0;m < nfilts-1;m++){
-           double H;
-
 	   if (i > 0){
 	       H = barkcoeffs[i][m] - barkcoeffs[i][m+1] - \
                                       (barkcoeffs[i-1][m] - barkcoeffs[i-1][m+1]);
@@ -483,15 +486,18 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
 
 static
 uint32_t* get_candidates(uint32_t val, uint8_t *toggles, const unsigned int P,int *nbcands){
+    unsigned i, curr_i, curr_candidate;
+    int bitnum;
+
+    uint32_t *cands = (uint32_t*)malloc((*nbcands)*sizeof(uint32_t));
 
     *nbcands = 1<<P;
-    uint32_t *cands = (uint32_t*)malloc((*nbcands)*sizeof(uint32_t));
     cands[0] = val;
-    unsigned int i;
-    for (i=1;i < *nbcands;i++){
-	int bitnum=0;
-	uint32_t curr_candidate = val;
-	unsigned int curr_i = i;
+    for (i=1;i < (unsigned int)*nbcands;i++){
+	bitnum=0;
+	curr_candidate = val;
+
+	curr_i = i;
 	while (curr_i) {
 	    if (curr_i & 0x00000001){
 		curr_candidate = TOGGLE_BIT(curr_candidate, toggles[bitnum]);
@@ -509,30 +515,32 @@ PHASH_EXPORT
 int lookupaudiohash(AudioIndex index_table,uint32_t *hash,uint8_t **toggles, int nbframes,\
                     int P, int blocksize,float threshold, uint32_t *id, float *cs){
 
-    int max_results = 3*blocksize;
+    int max_results = 3*blocksize, nbresults = 0, max_cnt = 0, max_pos = 0, total = 0, error = 0;
+    int i,j,k,m, nbcandidates, already_added;
     uint32_t *results = (uint32_t*)malloc(max_results*sizeof(uint32_t));
     uint32_t *last_positions = (uint32_t*)malloc(max_results*sizeof(uint32_t));
+    uint32_t *subhash, *candidates;
+    uint8_t *curr_toggles;
     int *result_cnts = (int*)malloc(max_results*sizeof(int));
+    float lvl;
+    TableValue *lookup_val;
+
     if (results == NULL || last_positions == NULL || result_cnts == NULL){
 	return -1;
     }
-    int nbresults = 0, max_cnt = 0, max_pos = 0, total = 0;
-    int error = 0;
-    float lvl;
-    int i,j,k,m;
+
     for (i=0;i<nbframes-blocksize+1;i+=blocksize){
-	uint32_t *subhash = hash+i;
+	subhash = hash+i;
 	for (j=0;j<blocksize;j++){
-	    int nbcandidates;
-	    uint8_t *curr_toggles = (toggles) ? toggles[i+j] : NULL;
-	    uint32_t *candidates = get_candidates(subhash[j], curr_toggles, P, &nbcandidates);
-	    TableValue *lookup_val;
+	    curr_toggles = (toggles) ? toggles[i+j] : NULL;
+	    candidates = get_candidates(subhash[j], curr_toggles, P, &nbcandidates);
+	    lookup_val;
 	    for (k = 0;k < nbcandidates; k++){
 		lookup_val = NULL;
 		error = table_retrieve((table_t*)index_table, &candidates[k],sizeof(uint32_t),\
                                            (void*)&lookup_val,NULL); 
 		if (lookup_val != NULL){
-		    int already_added = 0;
+		    already_added = 0;
 		    for (m=0;m<nbresults;m++){
 			if (results[m] == lookup_val->id &&\
 			    lookup_val->pos > last_positions[m] &&\

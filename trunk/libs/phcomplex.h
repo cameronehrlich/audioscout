@@ -22,8 +22,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifndef COMPLEX_H
-#define COMPLEX_H
+#ifndef PHCOMPLEX_H
+#define PHCOMPLEX_H
 
 typedef struct phcomplex {
      double re;
@@ -39,4 +39,5 @@ PHComplex sub_complex(const PHComplex a, const PHComplex b);
 PHComplex mult_complex(const PHComplex a, const PHComplex b);
 
 double complex_abs(const PHComplex a);
-#endif
+
+#endif /* PHCOMPLEX_H */

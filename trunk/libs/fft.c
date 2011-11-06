@@ -22,9 +22,9 @@
 #include "fft.h"
 
 
-void fft_calc(const int N, const double *x, Complex *X, Complex *P, const int step, const Complex *twids){
+void fft_calc(const int N, const double *x, PHComplex *X, PHComplex *P, const int step, const PHComplex *twids){
     int k;
-    Complex *S = P + N/2;
+    PHComplex *S = P + N/2;
     if (N == 1){
 	X[0].re = x[0];
         X[0].im = 0;
@@ -43,10 +43,10 @@ void fft_calc(const int N, const double *x, Complex *X, Complex *P, const int st
 }
 
 
-int fft(const double *x, const int N, Complex *X){
+int fft(const double *x, const int N, PHComplex *X){
 
-    Complex *twiddle_factors = (Complex*)malloc(sizeof(Complex)*(N/2));
-    Complex *Xt = (Complex*)malloc(sizeof(Complex)*(N));
+    PHComplex *twiddle_factors = (PHComplex*)malloc(sizeof(PHComplex)*(N/2));
+    PHComplex *Xt = (PHComplex*)malloc(sizeof(PHComplex)*(N));
     int k;
     for (k=0;k<N/2;k++){
 	twiddle_factors[k] = polar_to_complex(1.0, 2.0*PI*k/N);

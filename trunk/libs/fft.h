@@ -25,8 +25,8 @@
 #define PI 3.1415926535897932
 
 #include <math.h>
-#include "complex.h"
+#include "phcomplex.h"
 
-int fft(const double *x, const int N, Complex *X);
+int fft(const double *x, const int N, PHComplex *X);
 
 #endif

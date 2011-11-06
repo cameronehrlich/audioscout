@@ -22,14 +22,14 @@
 #ifndef _SERIALIZE_H
 #define _SERIALIZE_H
 
-#include <sys/param.h>
-
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
 #include <machine/endian.h>
 #warning "detected freeBSD machine"
-#else
+#elif defined(__LINUX)
+#include <sys/param.h>
 #include <endian.h>
-#warning "detected gnu/linux machine"
+#elif defined(__MINGW32__) || defined(_WIN32)
+#define __BYTE_ORDER __LITTLE_ENDIAN
 #endif
 
 #include <stdint.h>
@@ -53,7 +53,6 @@ float hosttonetf(float fval){
 
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-#warning "big endian detected"
 
 #define hosttonet32(X) (((X & 0xff) << 24) +\
                         (((X>> 8) & 0xff) << 16) +\
@@ -65,7 +64,6 @@ float hosttonetf(float fval){
 
 
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-#warning "little endian detected"
 
 #define hosttonet32(X)  X
 #define hosttonetf(X)   X

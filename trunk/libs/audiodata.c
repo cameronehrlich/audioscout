@@ -33,6 +33,13 @@
 #include "mpg123.h"
 #endif
 
+#if defined(_WIN32)
+#define strdup _strdup
+#define strncasecmp(x,y,z) stricmp(x,y)
+#define snprintf sprintf_s
+#define strncat(x, y, z) strncat_s(x, strlen(x), y, z)
+#endif /* _WIN32 */
+
 AUDIODATA_EXPORT
 void init_mdata(AudioMetaData *mdata){
   if (mdata == NULL) return;
@@ -303,8 +310,15 @@ float *readaudio_snd(const char *filename, long *sr, unsigned int *buflen,\
 		     const float nbsecs, AudioMetaData *mdata, int *error){
 
     SF_INFO sf_info;
+    SNDFILE *sndfile;
+    sf_count_t cnt_frames;
+    const char *tmp;
+    float *inbuf, *buf;
+    unsigned int src_frames;
+    int i,j,indx;
+
     sf_info.format=0;
-    SNDFILE *sndfile = sf_open(filename, SFM_READ, &sf_info);
+    sndfile = sf_open(filename, SFM_READ, &sf_info);
     if (sndfile == NULL){
       *error = PHERR_SNDFILEOPEN;
       return NULL;
@@ -316,7 +330,7 @@ float *readaudio_snd(const char *filename, long *sr, unsigned int *buflen,\
     if (mdata){
 	init_mdata(mdata);
 	/* extract metadata from file */ 
-	const char *tmp = sf_get_string(sndfile, SF_STR_TITLE);
+	tmp = sf_get_string(sndfile, SF_STR_TITLE);
 	mdata->title2 = (tmp) ? strdup(tmp): NULL;
       
 	tmp = sf_get_string(sndfile,SF_STR_ARTIST);
@@ -330,26 +344,26 @@ float *readaudio_snd(const char *filename, long *sr, unsigned int *buflen,\
     *sr = (long)sf_info.samplerate;
 
     /*allocate input buffer for signal*/
-    unsigned int src_frames = (nbsecs <= 0) ? sf_info.frames : (nbsecs*sf_info.samplerate);
-    src_frames = (sf_info.frames < src_frames) ? sf_info.frames : src_frames;
-    float *inbuf = (float*)malloc(src_frames*sf_info.channels*sizeof(float));
+    src_frames = (nbsecs <= 0) ? (unsigned int)sf_info.frames : (unsigned int)(nbsecs*sf_info.samplerate);
+    src_frames = (sf_info.frames < src_frames) ? (unsigned int)sf_info.frames : src_frames;
+    inbuf = (float*)malloc(src_frames*sf_info.channels*sizeof(float));
     if (inbuf == NULL){
       *error = PHERR_MEMALLOC;
       return NULL;
     }
     /*read frames */ 
-    sf_count_t cnt_frames = sf_readf_float(sndfile, inbuf, src_frames);
+    cnt_frames = sf_readf_float(sndfile, inbuf, src_frames);
 
-      float *buf = (float*)malloc(cnt_frames*sizeof(float));
-      if (buf == NULL){
-	*error = PHERR_MEMALLOC;
-	return NULL;
-      }
-      *buflen = cnt_frames;
+    buf = (float*)malloc((size_t)cnt_frames*sizeof(float));
+    if (buf == NULL){
+      *error = PHERR_MEMALLOC;
+      return NULL;
+    }
+    *buflen = (unsigned int)cnt_frames;
       
     
     /*average across all channels*/
-    int  i,j,indx=0;
+    indx=0;
     for (i=0;i<cnt_frames*sf_info.channels;i+=sf_info.channels){
 	buf[indx] = 0;
 	for (j=0;j<sf_info.channels;j++){
@@ -366,22 +380,31 @@ AUDIODATA_EXPORT
 float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int *buflen,\
                  const float nbsecs, AudioMetaData *mdata, int *error)
 {
+  SRC_STATE *src_state;
+  SRC_DATA src_data;
   long orig_sr;
-  unsigned int orig_length = 0;
-  float *inbuffer = NULL;
+  unsigned int orig_length = 0, outbufferlength = 0;
+  const char *suffix;
+  char *name;
+  float *inbuffer = NULL, *outbuffer = NULL;
+  double sr_ratio;
   *error = PHERR_SUCCESS;
 
   if (filename == NULL || buflen == NULL) {
     *error = PHERR_NULLARG;
     return NULL;
   }
+
   if (mdata) init_mdata(mdata);
 
-  const char *suffix = strrchr(filename, '.');
+  suffix = strrchr(filename, '.');
 
   if (*suffix != '\0' && !strncasecmp(suffix+1, "mp3",3)) {
 #ifdef HAVE_MPG123
     inbuffer = readaudio_mp3(filename, &orig_sr, &orig_length, nbsecs, mdata, error);
+#else
+    /* no mp3 support compiled in */
+    return NULL;
 #endif /* HAVE_MPG123 */
   } else {
     inbuffer = readaudio_snd(filename, &orig_sr, &orig_length, nbsecs, mdata, error);
@@ -393,14 +416,14 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
 
   /* if no data extracted for title, use the file name */ 
   if (mdata && mdata->title2 == NULL){
-      char *name = strrchr(filename, '/');
+      name = strrchr(filename, '/');
       if (name == NULL) name = strchr(filename, '\\');
       if (name) mdata->title2 = strdup(name+1);
   }
 
   /* resample float array */ 
   /* set desired sr ratio */ 
-  double sr_ratio = (double)(sr)/(double)orig_sr;
+  sr_ratio = (double)(sr)/(double)orig_sr;
   if (src_is_valid_ratio(sr_ratio) == 0){
     *error = PHERR_BADSR;
     free(inbuffer);
@@ -408,9 +431,9 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
   }
 
   /* allocate output buffer for conversion */ 
-  unsigned int outbufferlength = sr_ratio*(orig_length);
+  outbufferlength = (unsigned int)(sr_ratio*orig_length);
 
-  float *outbuffer = NULL;
+  outbuffer = NULL;
   if (sigbuf && outbufferlength < *buflen){
     outbuffer = sigbuf;
   } else {
@@ -423,7 +446,7 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
     return NULL;
   }
 
-  SRC_STATE *src_state = src_new(SRC_LINEAR, 1, error);
+  src_state = src_new(SRC_LINEAR, 1, error);
   if (!src_state){
     *error = PHERR_SRCCONTXT;
     free(inbuffer);
@@ -431,7 +454,7 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
      return NULL;
   }
 
-  SRC_DATA src_data;
+  src_data;
   src_data.data_in = inbuffer;
   src_data.data_out = outbuffer;
   src_data.input_frames = orig_length;
@@ -459,13 +482,21 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
 
 
 AUDIODATA_EXPORT
+void* get_context(int n){
+  return zmq_init(1);
+}
+
+AUDIODATA_EXPORT
 AudioDataDB open_audiodata_db(void *ctx,const char *addr){
+  int rc;
+  void *skt;
+
     if (ctx == NULL) return NULL;
-    
-    void *skt = zmq_socket(ctx, ZMQ_REQ);
+
+    skt = zmq_socket(ctx, ZMQ_REQ);
     if (skt == NULL) return NULL;
 
-    int rc = zmq_connect(skt, addr);
+    rc = zmq_connect(skt, addr);
     if (rc) return NULL;
 
     return (AudioDataDB)skt;
@@ -488,11 +519,11 @@ static const char space = 32; /* space */
 
 AUDIODATA_EXPORT
 int metadata_to_inlinestr(AudioMetaData *mdata, char *str, int len){
+  char scratch[5];
     if (str == NULL || len < 256 || mdata == NULL) return -1;
 
     /* composer(str) | title(str) | perf(str) | date(str) |  album(str) | genre(str)|*/
     /*   year (int)  | dur (int)  | part(int) */ 
-
     str[0] = '\0';
     if (mdata->composer) strncat(str, mdata->composer, len);
 
@@ -528,7 +559,6 @@ int metadata_to_inlinestr(AudioMetaData *mdata, char *str, int len){
 
     APPEND_DELIM(str);
 
-    char scratch[5];
     snprintf(scratch, 5, "%d", mdata->year);
     strncat(str, scratch, len);
 
@@ -548,17 +578,19 @@ int metadata_to_inlinestr(AudioMetaData *mdata, char *str, int len){
 
 AUDIODATA_EXPORT
 int store_audiodata(AudioDataDB mdatastore, char *mdata_inline, uint32_t *id){
+  void *skt;
+  zmq_msg_t cmd_msg, mdata_msg, uid_msg;
+  uint8_t cmd;
+  uint32_t uid;
 
   if (id == NULL || mdata_inline == NULL || mdatastore == NULL) return -1;
 
-  void *skt = mdatastore;
+  skt = mdatastore;
+  cmd = 1;
+  uid = 0;
 
   /* parse the mdata to an inline string for transmitting */
   /* if (metadata_to_inlinestr(mdata, inlinestr, 512) < 0) return -1; */
-
-  zmq_msg_t cmd_msg, mdata_msg, uid_msg;
-  uint8_t cmd = 1;
-  uint32_t uid = 0;
 
   zmq_msg_init_size(&cmd_msg, sizeof(uint8_t));
   memcpy(zmq_msg_data(&cmd_msg), &cmd, sizeof(uint8_t));
@@ -584,15 +616,14 @@ int store_audiodata(AudioDataDB mdatastore, char *mdata_inline, uint32_t *id){
 
 AUDIODATA_EXPORT
 char* retrieve_audiodata(AudioDataDB mdatastore, uint32_t id){
-    if (mdatastore == NULL || id == 0) return NULL;
-
     void *skt = (void*)mdatastore;
     char *mdatastr = NULL;
-    zmq_msg_t cmd_msg, uid_msg, mdata_msg;
+    zmq_msg_t cmd_msg,  uid_msg, mdata_msg;
     uint8_t cmd = 2;
-    uint32_t uid;
-    uid = hosttonet32(id);
+    uint32_t uid = hosttonet32(id);
 
+    if (mdatastore == NULL || id == 0) return NULL;
+  
     zmq_msg_init_size(&cmd_msg, sizeof(uint8_t));
     memcpy(zmq_msg_data(&cmd_msg), &cmd, sizeof(uint8_t));
     zmq_send(skt, &cmd_msg, ZMQ_SNDMORE);
@@ -613,3 +644,8 @@ char* retrieve_audiodata(AudioDataDB mdatastore, uint32_t id){
     return mdatastr;
 }
 
+
+AUDIODATA_EXPORT
+void audiodata_free(void *ptr){
+  free(ptr);
+}
