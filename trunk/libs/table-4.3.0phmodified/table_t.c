@@ -26,11 +26,11 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#ifdef unix
+#ifdef __unix__
 #include <unistd.h>
 #endif
 
-#ifdef win32
+#if defined(__MINGW32__) || defined(_WIN32)
 #include <windows.h>
 #define random rand
 #define srandom srand
@@ -43,9 +43,7 @@ static	char	*rcs_id =
 
 #define RANDOM_VALUE(x)		((random() % ((x) * 10)) / 10)
 
-
 #define TABLE_FILE	"table_file.tbl"	/* name of mmap'd test file */
-
 
 #define SAMPLE_SIZE	1024
 #define ITERATIONS	10000
@@ -760,9 +758,10 @@ static	int	test_eq(table_t *tab1_p, table_t *tab2_p, const int verb_b)
  */
 static	void	io_test(table_t *tab_p)
 {
-  int		ret, bucket_n, entry_n;
+  int		ret, bucket_n, entry_n, pmode;
   table_t	*tab2_p;
-  
+  clock_t       goal;
+
   (void)printf("Performing I/O tests:\n");
   (void)fflush(stdout);
   
@@ -796,11 +795,16 @@ static	void	io_test(table_t *tab_p)
   /*
    * dump the table to disk
    */
-  int pmode = 0640;
-#ifdef win32
-  pmode = _S_IREAD | _S_IWRITE;
+#if defined(_unix_)
+  pmode = 00755;
+#elif defined(__MINGW32__) || defined(_WIN32)
+  pmode = _S_IREAD |_S_IWRITE;
 #endif
-  (void)unlink(TABLE_FILE);
+
+  if (!unlink(TABLE_FILE)){
+    perror("could not delete:");
+  }
+
   ret = table_write(tab_p, TABLE_FILE, pmode);
   if (ret != TABLE_ERROR_NONE) {
     (void)fprintf(stderr, "could not write table to '%s': %s\n",
@@ -837,6 +841,7 @@ static	void	io_test(table_t *tab_p)
     exit(1);
   }
   
+  printf("Testing mmap ...\n");
   /*
    * mmap in the table
    */
@@ -855,6 +860,8 @@ static	void	io_test(table_t *tab_p)
     (void)printf("  NOT equal.\n");
   }
   
+  printf("Unmap table ...\n");
+
   ret = table_munmap(tab2_p);
   if (ret != TABLE_ERROR_NONE) {
     (void)fprintf(stderr, "could not munmap file '%s': %s\n",

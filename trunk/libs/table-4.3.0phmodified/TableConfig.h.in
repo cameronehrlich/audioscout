@@ -2,5 +2,3 @@
 #define Table_MAJOR_VERSION @Table_MAJOR_VERSION@
 #define Table_MINOR_VERSION @Table_MINOR_VERSION@
 
-#cmakedefine UNIX
-#cmakedefine WIN32

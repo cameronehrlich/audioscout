@@ -34,13 +34,13 @@
 #include <string.h>
 #include <fcntl.h>
 
-#ifdef unix
+#ifdef __unix__
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #endif
 
-#ifdef win32
+#if defined(__MINGW32__) || defined(_WIN32)
 #include <windows.h>
 #include <sys/stat.h>
 #include <io.h>
@@ -3067,18 +3067,19 @@ table_t		*table_mmap(const char *path, int *error_p)
   
   table_t	*table_p;
   struct stat	sbuf;
-  int		state;
+  int		state, fd;
   unsigned int  fsize = 0;
-  
+  HANDLE fh, fm_object;
+
   table_p = (table_t *)malloc(sizeof(table_t));
   if (table_p == NULL) {
     SET_POINTER(error_p, TABLE_ERROR_ALLOC);
     return NULL;
   }
 
-#ifdef win32
+#if defined(__MINGW32__) || defined(_WIN32)
 
-  HANDLE fh = CreateFile(path, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE,\
+  fh = CreateFile(path, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE,\
 			 NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (fh == INVALID_HANDLE_VALUE){
     free(table_p);
@@ -3093,7 +3094,7 @@ table_t		*table_mmap(const char *path, int *error_p)
     return NULL;
   }
 
-  HANDLE fm_object = CreateFileMapping(fh, NULL, PAGE_READONLY, 0, 0, NULL);
+  fm_object = CreateFileMapping(fh, NULL, PAGE_READONLY, 0, 0, NULL);
   if (fm_object == NULL){
     free(table_p);
     SET_POINTER(error_p, TABLE_ERROR_MMAP);
@@ -3109,10 +3110,10 @@ table_t		*table_mmap(const char *path, int *error_p)
     return NULL;
   }
 
-#else
+#elif defined(__unix__)
   
   /* open the mmap file */
-  int fd = open(path, O_RDONLY, 0);
+  fd = open(path, O_RDONLY, 0);
   if (fd < 0) {
     free(table_p);
     SET_POINTER(error_p, TABLE_ERROR_OPEN);
@@ -3135,7 +3136,7 @@ table_t		*table_mmap(const char *path, int *error_p)
   state = MAP_SHARED;
 #endif
   
-  table_p->ta_mmap = (table_t *)mmap((caddr_t)0, sbuf.st_size, PROT_READ,
+  table_p->ta_mmap = (table_t *)mmap(NULL, sbuf.st_size, PROT_READ,
 				     state, fd, 0);
   (void)close(fd);
   
@@ -3213,10 +3214,11 @@ int	table_munmap(table_t *table_p)
     return TABLE_ERROR_PNT;
   }
 
-#ifdef win32
+#if defined(__MINGW32__) || defined(_WIN32)
+
   UnmapViewOfFile((LPCVOID)table_p->ta_mmap);
 
-#else
+#elif defined(__unix__)
   
   (void)munmap((caddr_t)table_p->ta_mmap, table_p->ta_file_size);
 
@@ -3263,13 +3265,13 @@ table_t	*table_read(const char *path, int *error_p)
   unsigned long	pos;
   table_t	*table_p;
 
-  int flags;  
-#ifdef unix
+  int flags, numbytes;  
+#ifdef __unix__
   flags = O_RDONLY;
-#elif defined(win32)
-  flags = O_RDONLY | O_BINARY;
-#else
-  flags = O_RDONLY;
+#elif defined(__MINGW32__)
+  flags = _O_RDONLY | _O_BINARY;
+#elif defined(_WIN32)
+  flags = _O_RDONLY | _O_BINARY;
 #endif
 
   /* open the file */
@@ -3316,7 +3318,7 @@ table_t	*table_read(const char *path, int *error_p)
     return NULL;
   }
   
-  int numbytes = fread(table_p->ta_buckets, sizeof(table_entry_t *), table_p->ta_bucket_n,
+  numbytes = fread(table_p->ta_buckets, sizeof(table_entry_t *), table_p->ta_bucket_n,
 		       infile);
   if (numbytes != table_p->ta_bucket_n){
     SET_POINTER(error_p, TABLE_ERROR_READ);
@@ -3433,19 +3435,19 @@ table_t	*table_read(const char *path, int *error_p)
 
 int	table_write(const table_t *table_p, const char *path, const int mode)
 {
-  int		fd, rem, ent_size, flags;
+  int		fd, rem, ent_size, flags = 0;
   unsigned int	bucket_c, bucket_size;
   unsigned long	size;
   table_entry_t	*entry_p, **buckets, **bucket_p, *next_p;
   table_t	main_tab;
   FILE		*outfile;
 
-#ifdef win32
-  flags = O_WRONLY | O_CREAT | O_TRUNC | O_BINARY ;
-#elif defined(unix)
+#if defined(__MINGW32__)
+  flags = _O_WRONLY | _O_CREAT | _O_TRUNC | _O_BINARY ;
+#elif defined(__unix__)
   flags = O_WRONLY | O_CREAT | O_TRUNC ;
-#else 
-  flags = O_WRONLY | O_CREAT | O_TRUNC ;
+#elif defined(_WIN32)
+  flags = _O_WRONLY | _O_CREAT | _O_TRUNC | _O_BINARY ;
 #endif
   
   if (table_p == NULL) {
@@ -3612,9 +3614,15 @@ int	table_write(const table_t *table_p, const char *path, const int mode)
    * Write a \0 at the end of the file to make sure that the last
    * fseek filled with nulls.
    */
-  (void)fputc('\0', outfile);
-  
-  (void)fclose(outfile);
+  if (fputc('\0', outfile) != 0){
+    return TABLE_ERROR_WRITE_END;
+  }
+  if (fflush(outfile) != 0){
+    return TABLE_ERROR_FLUSH;
+  }
+  if (fclose(outfile) != 0){
+    return TABLE_ERROR_CLOSE;
+  }
   if (table_p->ta_free_func == NULL) {
     free(buckets);
   }
