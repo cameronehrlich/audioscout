@@ -24,10 +24,6 @@
 #ifndef __TABLE_LOC_H__
 #define __TABLE_LOC_H__
 
-#if !defined(unix) && !defined(win32)
-#define NO_MMAP
-#endif
-
 #ifndef	BITSPERBYTE
 #define BITSPERBYTE	8
 #endif
@@ -221,6 +217,9 @@ static	error_str_t	errors[] = {
   { TABLE_ERROR_ALIGNMENT,	"invalid alignment value" },
   { TABLE_ERROR_COMPARE,	"problems with internal comparison" },
   { TABLE_ERROR_FREE,		"memory free error" },
+  { TABLE_ERROR_FLUSH,          "flush error" },
+  { TABLE_ERROR_CLOSE,          "unable to close file" },
+  { TABLE_ERROR_WRITE_END,      "could not write end char" },
   { 0 }
 };
 

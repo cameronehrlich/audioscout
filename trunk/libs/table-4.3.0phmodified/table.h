@@ -63,7 +63,9 @@ extern "C" {
 #define TABLE_ERROR_ALIGNMENT	18	/* invalid alignment value */
 #define TABLE_ERROR_COMPARE	19	/* problems with internal comparison */
 #define TABLE_ERROR_FREE	20	/* memory free error */
-
+#define TABLE_ERROR_FLUSH       21      /* flush error */
+#define TABLE_ERROR_CLOSE       22      /* file close error */
+#define TABLE_ERROR_WRITE_END   23      /* unable to write end char */
 /*
  * Table flags set with table_attr.
  */
