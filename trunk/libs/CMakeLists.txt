@@ -9,13 +9,13 @@ if (CMAKE_HOST_WIN32)
 #  set windows variables here:
 #  where to put include and static export libraries 
 
-   set(MY_INSTALL_LOC "c:\Users\Public\local")
-   set(MY_INCLUDE_LOC "c:\Users\Public\local\include")
-   set(MY_LIB_LOC     "c:\Users\Public\local\lib")
+   set(MY_INSTALL_LOC "c:/Users/Public/local")
+   set(MY_INCLUDE_LOC "c:/Users/Public/local/include")
+   set(MY_LIB_LOC     "c:/Users/Public/local/lib")
 
    message("win32 system detected")
    set(BUILD_DLL 1)
-   include_directories(${MY_INCLUDE_LOC}))
+   include_directories(${MY_INCLUDE_LOC})
    link_directories(${MY_LIB_LOC})
    set(CMAKE_INSTALL_PREFIX  ${MY_INSTALL_LOC})
    add_definitions(/D _UNICODE)
@@ -52,15 +52,6 @@ if (CMAKE_HOST_UNIX)
    add_executable(audioindex audio_index.c)
    target_link_libraries(audioindex AudioData pHashAudio m)
 endif(CMAKE_HOST_UNIX)
-
-if (CMAKE_HOST_WIN32)
-
-#compile testAudioData program on windows
-
-   add_executable(testAudioData testAudioData.c)
-   target_link_libraries(testAudioData AudioData pHashAudio)
-
-endif (CMAKE_HOST_WIN32)
 
 if (CMAKE_HOST_WIN32)
 # compile csharp bindings for windows
