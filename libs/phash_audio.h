@@ -27,18 +27,9 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "pHashAudioConfig.h"
 
-
-
-#if defined(win32)
-#define SEPARATOR "\\"
-#elif defined(unix)
-#define SEPARATOR "/"
-#else
-#define SEPARATOR "/"
-#endif
-
-#if defined(BUILD_DLL)
+#if defined(BUILD_DLL) 
 #define PHASH_EXPORT __declspec(dllexport)
 #elif defined(BUILD_EXE)
 #define PHASH_EXPORT __declspec(dllimport)
@@ -46,10 +37,19 @@ extern "C" {
 #define PHASH_EXPORT
 #endif
 
+
+#if defined(__MINGW32__)
+#define SEPARATOR "\\"
+#elif defined(__unix__)
+#define SEPARATOR "/"
+#else
+#define SEPARATOR "/"
+#endif
+
 /* macro to toggle bit position b in uint32 type */
 #define TOGGLE_BIT(word,b)     (0x00000001 << b)^word
 
-
+PHASH_EXPORT
 typedef struct hash_st_info {
   unsigned int sr;
   unsigned int framelength;
@@ -63,10 +63,12 @@ typedef struct hash_st_info {
 
 /* type to use for an AudioIndex object to pass to functions */ 
 
+PHASH_EXPORT
 typedef void* AudioIndex;
 
 /* data to store in the table for each hash frame */ 
 
+PHASH_EXPORT
 typedef struct table_val_t {
   uint32_t id; /*  id of the audio signal  */ 
   uint32_t pos; /* frame number position in stream  */ 
@@ -181,9 +183,13 @@ int grow_audioindex(AudioIndex audio_index, const float load);
 
 #endif /* JUST_AUDIOHASH */
 
-PHASH_EXPORT
+#ifndef _WIN32
+
+
 char** readfilenames(const char *dirname, unsigned int *nbfiles);
 
+
+#endif /* _WIN32 */
 
 /* ph_free */
 /* use to free any memory allocated by the library */
@@ -251,7 +257,6 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
 
 
 #ifndef JUST_AUDIOHASH
-
 PHASH_EXPORT
 int lookupaudiohash(AudioIndex index_table, uint32_t *hash, uint8_t **toggles, int nbframes,\
                     int P, int blocksize, float threshold, uint32_t *id, float *cs);

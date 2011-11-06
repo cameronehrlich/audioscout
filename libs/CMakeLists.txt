@@ -4,14 +4,34 @@ project(pHashAudio)
 set(pHashAudio_VERSION_MAJOR 1)
 set(pHashAudio_VERSION_MINOR 0)
 
-add_definitions("-g -O3 -shared -fPIC")
+if (CMAKE_HOST_WIN32)
+
+#  set windows variables here:
+#  where to put include and static export libraries 
+
+   set(MY_INSTALL_LOC "c:\Users\Public\local")
+   set(MY_INCLUDE_LOC "c:\Users\Public\local\include")
+   set(MY_LIB_LOC     "c:\Users\Public\local\lib")
+
+   message("win32 system detected")
+   set(BUILD_DLL 1)
+   include_directories(${MY_INCLUDE_LOC}))
+   link_directories(${MY_LIB_LOC})
+   set(CMAKE_INSTALL_PREFIX  ${MY_INSTALL_LOC})
+   add_definitions(/D _UNICODE)
+
+endif(CMAKE_HOST_WIN32)
+
+if (CMAKE_HOST_UNIX)
+
+# set unix system variables
+
+   message("unix system detected")
+   add_definitions(-g -O3 -shared -fPIC)
+
+endif(CMAKE_HOST_UNIX)
 
 add_subdirectory(table-4.3.0phmodified)
-
-find_library(HAVE_MPG123 mpg123)
-find_library(HAVE_SNDFILE sndfile)
-find_library(HAVE_SAMPLERATE samplerate)
-find_library(HAVE_ZMQ zmq)
 
 configure_file(
   "${PROJECT_SOURCE_DIR}/pHashAudioConfig.h.in"
@@ -19,26 +39,46 @@ configure_file(
 )
 
 include_directories("${PROJECT_BINARY_DIR}")
-
 link_directories("${PROJECT_BINARY_DIR}/table-4.3.0phmodified")
 
-if(HAVE_MPG123)
-set(EXTRA_LIBS ${EXTRA_LIBS} mpg123)
-endif(HAVE_MPG123)
-
-add_library(pHashAudio SHARED phash_audio.c phash_audio.h fft.c fft.h complex.c complex.h)
+add_library(pHashAudio SHARED phash_audio.c fft.c phcomplex.c)
 target_link_libraries(pHashAudio table)
 
-add_library(AudioData SHARED audiodata.c audiodata.h pHashAudioConfig.h)
-target_link_libraries(AudioData sndfile samplerate ${EXTRA_LIBS})
+add_library(AudioData SHARED audiodata.c)
+target_link_libraries(AudioData  libsndfile-1 libsamplerate-0 zmq)
 
-add_executable(audioindex audio_index.c)
-target_link_libraries(audioindex AudioData pHashAudio zmq sndfile samplerate m)
+if (CMAKE_HOST_UNIX)
 
-install(TARGETS pHashAudio DESTINATION lib)
+   add_executable(audioindex audio_index.c)
+   target_link_libraries(audioindex AudioData pHashAudio m)
+endif(CMAKE_HOST_UNIX)
+
+if (CMAKE_HOST_WIN32)
+
+#compile testAudioData program on windows
+
+   add_executable(testAudioData testAudioData.c)
+   target_link_libraries(testAudioData AudioData pHashAudio)
+
+endif (CMAKE_HOST_WIN32)
+
+if (CMAKE_HOST_WIN32)
+# compile csharp bindings for windows
+  add_subdirectory(bindings/csharp)
+endif (CMAKE_HOST_WIN32)
+
+#install files 
+
+if(CMAKE_HOST_WIN32)
+   install(FILES pHashAudio.dll AudioData.dll DESTINATION bin)
+   install(FILES pHashAudio.dll.a AudioData.dll.a DESTINATION lib)
+else(CMAKE_HOST_WIN32)
+   install(TARGETS pHashAudio AudioData DESTINATION lib)
+endif(CMAKE_HOST_WIN32)
+
 install(FILES phash_audio.h DESTINATION include)
-
-install(TARGETS AudioData  DESTINATION lib)
 install(FILES audiodata.h DESTINATION include)
 
-install(TARGETS audioindex DESTINATION bin)
+if (CMAKE_HOST_UNIX)
+   install(TARGETS audioindex DESTINATION bin)
+endif(CMAKE_HOST_UNIX)
