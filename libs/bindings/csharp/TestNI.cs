@@ -19,7 +19,7 @@
 */
 
 using System;
-using System.Text;
+using System.Runtime.InteropServices;
 using PHash;
 
 class TestPHashAudioBindings
@@ -29,33 +29,60 @@ class TestPHashAudioBindings
     if (args.Length < 1)
       {
 	System.Console.WriteLine("not enough args");
+	System.Console.WriteLine("usage:");
+	System.Console.WriteLine("TestNI.exe <audiofile>");
 	return 0;
       }
+
     string file = args[0];
+    System.Console.WriteLine("file: " + file);
 
-    unsafe
+    // create struct to hold AudioMetaData struct
+    AudioData.AudioMetaData mdata = new AudioData.AudioMetaData();
+
+    // read audio 
+    Int32 err = 0;
+    float[] buf = AudioData.readaudio(file, 6000, 0, ref mdata, ref err);
+    if (buf == null)
       {
-
-	System.Console.WriteLine("file: " + file);
-
-	PHashAudio.AudioHashStInfo hashinfo;
-	UInt32 *phash;
-	UInt32 buflen = 0, nbframes = 0;
-	int error = 0;
-	void *hashptr = null;
-	float *buf = AudioData.readaudio(file, 6000, null, &buflen, 0, null, &error);
-	
-	System.Console.WriteLine("buffer length " + buflen);
-
-	int rc = PHashAudio.audiohash(buf, &phash, null, null, null, &nbframes, null, null, buflen, 0, 6000, &hashinfo);
-
-	System.Console.WriteLine("hash ret code " + rc + " # frames " + nbframes);
-
-	AudioData.audiodata_free(buf);
-	PHashAudio.ph_free(phash);
-	PHashAudio.ph_hashst_free(&hashinfo);
+	System.Console.WriteLine("error reading audio: " + err);
+	return -1;
       }
 
+    // print metadata information for file.
+    System.Console.WriteLine("buffer contains " + buf.Length + " samples");
+    System.Console.WriteLine("composer: " + AudioData.getString(mdata.composer));
+    System.Console.WriteLine("title2: " + AudioData.getString(mdata.title2));
+    System.Console.WriteLine("pe1: " + AudioData.getString(mdata.tpe1));
+    System.Console.WriteLine("date: " + AudioData.getString(mdata.date));
+    System.Console.WriteLine("year: " + mdata.year);
+    System.Console.WriteLine("album: " + AudioData.getString(mdata.album));
+    System.Console.WriteLine("genre: " + AudioData.getString(mdata.genre));
+    System.Console.WriteLine("duration: " + mdata.duration);
+    System.Console.WriteLine("partofset: " + mdata.partofset);
+
+    // create AudioHashStInfo struct
+    // This holds information commonly used information that can be used
+    // across hash calculations, to keep from having to realloc and recalc.
+    PHashAudio.AudioHashStInfo hashst = new PHashAudio.AudioHashStInfo();
+
+    // calculate hash for signal buffer 
+    Int32[] hasharray = PHashAudio.audiohash(buf, 6000, ref hashst);
+    if (hasharray == null)
+      {
+	System.Console.WriteLine("problem calculating hash.");
+	return -1;
+      }
+
+
+    System.Console.WriteLine("buffer hashed to " + hasharray.Length + " frames");
+
+    // cleanup members of struct AudioMetaData
+    AudioData.free_mdata(ref mdata);
+
+    // cleanup members of struct AudioHashStInfo
+    // Invoke when finished hashing a group of files.
+    PHashAudio.ph_hashst_free(ref hashst);
     return 0;   
   }
 }

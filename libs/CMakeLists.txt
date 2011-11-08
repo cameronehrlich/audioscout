@@ -18,7 +18,7 @@ if (CMAKE_HOST_WIN32)
    include_directories(${MY_INCLUDE_LOC})
    link_directories(${MY_LIB_LOC})
    set(CMAKE_INSTALL_PREFIX  ${MY_INSTALL_LOC})
-   add_definitions(/D _UNICODE)
+   add_definitions(/D _MBCS)
 
 endif(CMAKE_HOST_WIN32)
 

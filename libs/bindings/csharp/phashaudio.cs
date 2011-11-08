@@ -24,68 +24,82 @@ using System.Runtime.InteropServices;
 namespace PHash
 {
 
-  unsafe public class PHashAudio 
+  public class PHashAudio 
   {
 
+
     /// <summary>
-    ///   struct to keep state information while hashing values.
+    ///   data struct to hold commonly used info across hash calculations.
     /// </summary>
+
     [StructLayout(LayoutKind.Sequential)]
     public struct AudioHashStInfo
     {
       UInt32 sr;
       UInt32 framelength;
-      double *window;
-      double **wts;
+      IntPtr window;
+      IntPtr wts;
     }
 
     /// <summary>
-    ///   calculate audio hash for given signal
+    ///   Calculate audio hash for signal buffer, buf
     /// </summary>
-    /// <param name="float*">buf, signal buffer (from readaudio) </param>
-    /// <param name="UInt32**">phash, reference to a UInt32 ptr in which to return array of hash values</param>
-    /// <param name="Double***">coeffs     null)</param>
-    /// <param name="Byte***">bit_toggles  null</param>
-    /// <param name="UInt32*">nbcoeffs     null</param>
-    /// <param name="UInt32*">nbframes, ptr to unsigned int, in which to length of hash array.</param>
-    /// <param name="double*">minB,        null</param>
-    /// <param name="double*">maxB,        null</param>
-    /// <param name="UInt32">buflen, length of signal buffer, buf (from readaudio function)</param>
-    /// <param name="UInt32">P, number toggles,  keep 0</param>
-    /// <param name="int">sr, sample rate of signal (same as passed to readaudio)</param>
-    /// <param name="AudioHashStInfo*">hashstinfo, reference to struct, treat as opaque pointer.</param>
-    /// <returns>int value, 0 for success, negative for error</returns>
+    /// <param name="float[]">signal buffer of which to hash</param>
+    /// <param name="Int32">sr, sample rate of signal, e.g. 6000 samples per second</param>
+    /// <param name="AudioHashStInfo">hash_st, ref to structure to hold commonly used info across calcs.</param>
+    /// <returns>Int32[] array of hash values</returns>
 
+    public static Int32[] audiohash(float[] buf,
+                                     Int32 sr,
+				     ref AudioHashStInfo hash_st)
+    {
+      IntPtr phash = IntPtr.Zero;
+      UInt32 nbcoeffs=0, nbframes=0;
+      double minB=0, maxB=0;
+      int err = audiohash(buf, ref phash, IntPtr.Zero, IntPtr.Zero,
+                          ref nbcoeffs, ref nbframes, 
+                          ref minB, ref maxB, (UInt32)buf.Length,
+                          0, sr, ref hash_st);
+
+      Int32[] hasharray = new Int32[(Int32)nbframes];
+      Marshal.Copy(phash, hasharray, 0, (Int32)nbframes);
+      ph_free(phash);
+      return hasharray;
+    }
+    
+    /// <summary>
+    ///   aux. extern function to native library
+    /// </summary>
     [DllImport("pHashAudio.dll")]
-    public extern static int audiohash(float *buf, UInt32 **phash, double ***coeffs, Byte ***bit_toggles,
-                                       UInt32 *nbcoeffs, UInt32 *nbframes, double *minB, double *maxB,
-				       UInt32 buflen, UInt32 P, int sr,  AudioHashStInfo *hashstinfo);
+    private extern static Int32 audiohash(float[] buf, 
+                                         ref IntPtr phash, 
+                                         IntPtr coeffs, IntPtr toggles,
+                                         ref UInt32 nbcoeffs, 
+                                         ref UInt32 nbframes, 
+                                         ref double minB, 
+                                         ref double maxB,
+                                         UInt32 buflen, 
+                                         UInt32 P, 
+                                         Int32 sr, 
+                                         ref AudioHashStInfo hash_st); 
+
+    /// <summary>
+    ///   aux free function to free hash array in unmanaged code.
+    /// </summary>
+    [DllImport("pHashAudio.dll")]
+    private extern static void ph_free(IntPtr ptr);
 
 
     /// <summary>
-    ///   free struct AudioHashStInfo after finished with all hashing
+    ///   free AudioHashStInfo struct members after done hashing a group of files.
     /// </summary>
-    /// <param name="void*">ptr to struct AudioHashStInfo</param>
-    /// <returns> void </returns>
+    /// <param name="AudioHashStInfo">hash_st, ref to AudioHashStInfo struct</param>
 
     [DllImport("pHashAudio.dll")]
-    public extern static void ph_hashst_free(void *ptr);
+    public extern static void ph_hashst_free(ref AudioHashStInfo hash_st);
 
-
-    /// <summary>
-    ///   free any memory allocated by audiohash function - i.e. the array of hash values.
-    /// </summary>
-    /// <param name="void*">pointer </param>
-    /// <returns> void </returns>
-
-    [DllImport("pHashAudio.dll")]
-    public extern static void ph_free(void *ptr);
-
-    /// <summary>
-    ///   private ctor to keep from instantiation,  all members are static.
-    /// </summary>
+    /// private ctor to keep from being instantiated.  All members are static.
     private PHashAudio(){}
 
    }
-  
 }
