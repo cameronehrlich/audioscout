@@ -170,7 +170,10 @@ void handle_signal(int sig){
 	syslog(LOG_DEBUG,"recieved signal %d", sig);
 	kill_server();
 	kill_process();
-	zmq_term(main_ctx);
+        /* if zmq_term function invoked */
+        /* need to close sockets in threads first */
+        /* and set socket option ZMQ_LINGER with 0 value */
+	/* zmq_term(main_ctx); */
 	exit(0);
 	break;
     }
