@@ -262,7 +262,10 @@ void handle_signal(int sig){
 	if (kill_server() < 0) syslog(LOG_CRIT,"SIGHANDLER: unable to kill server");
 	if (kill_index() < 0) syslog(LOG_CRIT,"SIGHANDLER: unable to kill index");
 	kill_process();
-	zmq_term(main_ctx);
+	/* should this be called ??? */
+        /* if called, must close sockets in threads */
+        /* before calling                           */
+	/* zmq_term(main_ctx); */
 	exit(0);
     }
 }
