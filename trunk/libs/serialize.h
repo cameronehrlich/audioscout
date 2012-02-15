@@ -34,10 +34,6 @@
 
 #include <stdint.h>
 
-#if CHAR_BIT != 8
-#error "unsupported char size"
-#endif
-
 /* serialize functions */
 
 float hosttonetf(float fval){
