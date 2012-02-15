@@ -205,7 +205,7 @@ static const char delim[2] = {0x1E, 0x00};
 static const char space = 32;
 
 int parse_into_sql(char *mdata, char *sql, int len){
-    if (sql == NULL || mdata == NULL || len < 512){
+    if (sql == NULL || mdata == NULL || len < 8){
 	syslog(LOG_ERR,"PARSETOSQL: arg error");
 	return -1;
     }
@@ -264,14 +264,16 @@ int parse_into_sql(char *mdata, char *sql, int len){
 static const char *colstr = "composer,title,performer,date,album,genre,year,dur,part,time";
 
 uint32_t insert_db(sqlite3 *db, char *inline_str){
-    char sql[512];
-    char rowstr[512];
     uint32_t row_id = 0;
     int err;
     sqlite3_stmt *ppdstmt = NULL;
 
-    parse_into_sql(inline_str, rowstr, 512);
-    snprintf(sql, 512, "INSERT INTO trcks (%s) VALUES %s ;", colstr, rowstr);
+    int blen = 2*strlen(inline_str);
+    char *sql = (char*)malloc(blen);
+    char *rowstr = (char*)malloc(blen);
+
+    parse_into_sql(inline_str, rowstr, blen);
+    snprintf(sql, blen, "INSERT INTO trcks (%s) VALUES %s ;", colstr, rowstr);
     syslog(LOG_DEBUG,"sqlstmt: %s", sql);
 
     /* execute sql statement */
@@ -283,6 +285,8 @@ uint32_t insert_db(sqlite3 *db, char *inline_str){
 	syslog(LOG_ERR,"unable to prepare statement, %d", err);
     }
     sqlite3_finalize(ppdstmt);
+    free(sql);
+    free(rowstr);
 
     return row_id;
 }
