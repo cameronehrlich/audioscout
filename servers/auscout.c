@@ -421,23 +421,29 @@ int handle_request(uint8_t thrn, void *qskt, void *pushskt, void *rskt, AudioDat
 	send_msg_data(qskt,  mdata_inline, strlen(mdata_inline)+1, free_fn, NULL);
 	break;
     case 2:
-	/* send topic, cmd, nb frames */
-	topic_str = strdup(submit_topic);
-	sendmore_msg_data(pushskt, topic_str, strlen(topic_str), free_fn, NULL);
-	sendmore_msg_vsm(pushskt, &cmd, sizeof(uint8_t));
-	sendmore_msg_vsm(pushskt, &nb, sizeof(uint32_t));
+	/* submission */
+	recieve_msg(qskt, &msg_size, &more, &more_size, (void**)&data);
 	
-	/* recieve and send hash msg part */
-	recvsnd(qskt, pushskt, &msg_size, &more, &more_size, NULL, NULL);
-	
-	int select = -1;
 	id = 0;
 	if (more){
 	    recieve_msg(qskt, &msg_size, &more, &more_size, (void**)&mdata_inline);
 	    if (store_audiodata(mdata_db, mdata_inline, &id) == 0){
-		select =  select_table();
+		int select =  select_table();
+
+		/* send topic, cmd, nb frames */
+		topic_str = strdup(submit_topic);
+		sendmore_msg_data(pushskt, topic_str, strlen(topic_str), free_fn, NULL);
+		sendmore_msg_vsm(pushskt, &cmd, sizeof(uint8_t));
+		sendmore_msg_vsm(pushskt, &nb, sizeof(uint32_t));
+		sendmore_msg_data(pushskt, data, msg_size, free_fn, NULL);
+		sid = hosttonet32(id);
+		table_n = (uint8_t)select;
+		sendmore_msg_vsm(pushskt, &table_n, sizeof(uint8_t));
+		send_msg_vsm(pushskt, &sid, sizeof(uint32_t));
+
 	    } else {
 		syslog(LOG_ERR,"WORKER%d: unable to store new data", thrn);
+		free(data);
 	    }
 	    syslog(LOG_DEBUG,"cmd=%u,nb=%u,%s, to table %d", cmd, nb_local, mdata_inline, select);
 	    if (more) flushall_msg_parts(qskt);
@@ -446,15 +452,8 @@ int handle_request(uint8_t thrn, void *qskt, void *pushskt, void *rskt, AudioDat
 	} else {
 	    /* no metadata found at end */
 	    syslog(LOG_DEBUG,"WORKER%d ERR: cmd=%u,nb=%u, no metadata found", thrn,cmd,nb_local);
+	    free(data);
 	}
-
-	sid = hosttonet32(id);
-	if (select >= 0){
-	    table_n = (uint8_t)select;
-	    sendmore_msg_vsm(pushskt, &table_n, sizeof(uint8_t));
-	    send_msg_vsm(pushskt, &sid, sizeof(uint32_t));
-	}
-
 	/* send id reply */
 	syslog(LOG_DEBUG,"WORKER%d: send reply, id = %u", thrn, id);
 	send_msg_vsm(qskt, &sid, sizeof(uint32_t));
