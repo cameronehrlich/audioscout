@@ -33,13 +33,6 @@
 #include "mpg123.h"
 #endif
 
-#if defined(_WIN32)
-#define strdup _strdup
-#define strncasecmp(x,y,z) stricmp(x,y)
-#define snprintf sprintf_s
-#define strncat(x, y, z) strncat_s(x, strlen(x), y, z)
-#endif /* _WIN32 */
-
 AUDIODATA_EXPORT
 void init_mdata(AudioMetaData *mdata){
   if (mdata == NULL) return;
