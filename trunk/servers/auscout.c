@@ -423,7 +423,8 @@ int handle_request(uint8_t thrn, void *qskt, void *pushskt, void *rskt, AudioDat
     case 2:
 	/* submission */
 	recieve_msg(qskt, &msg_size, &more, &more_size, (void**)&data);
-	
+	size_t data_size = msg_size;
+
 	id = 0;
 	if (more){
 	    recieve_msg(qskt, &msg_size, &more, &more_size, (void**)&mdata_inline);
@@ -435,7 +436,7 @@ int handle_request(uint8_t thrn, void *qskt, void *pushskt, void *rskt, AudioDat
 		sendmore_msg_data(pushskt, topic_str, strlen(topic_str), free_fn, NULL);
 		sendmore_msg_vsm(pushskt, &cmd, sizeof(uint8_t));
 		sendmore_msg_vsm(pushskt, &nb, sizeof(uint32_t));
-		sendmore_msg_data(pushskt, data, msg_size, free_fn, NULL);
+		sendmore_msg_data(pushskt, data, data_size, free_fn, NULL);
 		sid = hosttonet32(id);
 		table_n = (uint8_t)select;
 		sendmore_msg_vsm(pushskt, &table_n, sizeof(uint8_t));

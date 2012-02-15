@@ -271,6 +271,10 @@ uint32_t insert_db(sqlite3 *db, char *inline_str){
     int blen = 2*strlen(inline_str);
     char *sql = (char*)malloc(blen);
     char *rowstr = (char*)malloc(blen);
+    if (!sql || !rowstr){
+	syslog(LOG_CRIT,"memalloc error");
+	return row_id;
+    }
 
     parse_into_sql(inline_str, rowstr, blen);
     snprintf(sql, blen, "INSERT INTO trcks (%s) VALUES %s ;", colstr, rowstr);
@@ -281,6 +285,7 @@ uint32_t insert_db(sqlite3 *db, char *inline_str){
     if (err == SQLITE_OK){
 	err = sqlite3_step(ppdstmt);
 	row_id = (uint32_t)sqlite3_last_insert_rowid(db);
+	syslog(LOG_DEBUG, "statement executed - rowid %d", row_id);
     }else {
 	syslog(LOG_ERR,"unable to prepare statement, %d", err);
     }
