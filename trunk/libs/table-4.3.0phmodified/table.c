@@ -3069,7 +3069,6 @@ table_t		*table_mmap(const char *path, int *error_p)
   struct stat	sbuf;
   int		state, fd;
   unsigned int  fsize = 0;
-  HANDLE fh, fm_object;
 
   table_p = (table_t *)malloc(sizeof(table_t));
   if (table_p == NULL) {
@@ -3079,7 +3078,7 @@ table_t		*table_mmap(const char *path, int *error_p)
 
 #if defined(__MINGW32__) || defined(_WIN32)
 
-  fh = CreateFile(path, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE,\
+  HANDLE fm_object, fh = CreateFile(path, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, \
 			 NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (fh == INVALID_HANDLE_VALUE){
     free(table_p);
