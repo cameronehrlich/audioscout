@@ -13,12 +13,13 @@ if (CMAKE_HOST_WIN32)
 endif(CMAKE_HOST_WIN32)
 
 if (CMAKE_HOST_UNIX)
-
 # set unix system variables
-
    message("unix system detected")
    add_definitions(-g -O3 -shared -fPIC)
-   
+   find_library(HAVE_MPG123 mpg123)
+   if (HAVE_MPG123)
+     set(MPG123_LIB "mpg123")
+   endif(HAVE_MPG123)
 endif(CMAKE_HOST_UNIX)
 
 add_subdirectory(table-4.3.0phmodified)
@@ -38,7 +39,6 @@ add_library(AudioData SHARED audiodata.c)
 target_link_libraries(AudioData  sndfile ${MPG123_LIB} samplerate zmq)
 
 if (CMAKE_HOST_UNIX)
-
    add_executable(audioindex audio_index.c)
    target_link_libraries(audioindex AudioData pHashAudio m)
 endif(CMAKE_HOST_UNIX)
