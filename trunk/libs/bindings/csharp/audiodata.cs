@@ -84,7 +84,7 @@ namespace PHash
     }
 
 
-    [DllImport("libAudioData.dll", CharSet=CharSet.Ansi)]
+    [DllImport("libAudioData.dll", CharSet=CharSet.Ansi, CallingConvention=CallingConvention.Cdecl)]
     private extern static IntPtr readaudio(String filename, 
                                            Int32 sr, 
 					   [ In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.R4)] 
@@ -101,10 +101,10 @@ namespace PHash
     /// </summary>
     /// <param name="ref AudioMetaData">mdata reference to AudioMetaData struct</param>
     /// <returns> void </returns>
-    [DllImport("libAudioData.dll")]
+    [DllImport("libAudioData.dll", CallingConvention=CallingConvention.Cdecl)]
     public extern static void free_mdata(ref AudioMetaData mdata);
 
-    [DllImport("libAudioData.dll")]
+    [DllImport("libAudioData.dll", CallingConvention=CallingConvention.Cdecl)]
     private extern static void audiodata_free(IntPtr ptr);
 
     /// <summary>
