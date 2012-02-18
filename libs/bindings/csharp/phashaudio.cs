@@ -70,7 +70,7 @@ namespace PHash
     /// <summary>
     ///   aux. extern function to native library
     /// </summary>
-    [DllImport("libpHashAudio.dll")]
+    [DllImport("libpHashAudio.dll", CallingConvention=CallingConvention.Cdecl)]
     private extern static Int32 audiohash(float[] buf, 
                                          ref IntPtr phash, 
                                          IntPtr coeffs, IntPtr toggles,
@@ -86,7 +86,7 @@ namespace PHash
     /// <summary>
     ///   aux free function to free hash array in unmanaged code.
     /// </summary>
-    [DllImport("libpHashAudio.dll")]
+    [DllImport("libpHashAudio.dll", CallingConvention=CallingConvention.Cdecl)]
     private extern static void ph_free(IntPtr ptr);
 
 
@@ -95,7 +95,7 @@ namespace PHash
     /// </summary>
     /// <param name="AudioHashStInfo">hash_st, ref to AudioHashStInfo struct</param>
 
-    [DllImport("libpHashAudio.dll")]
+    [DllImport("libpHashAudio.dll", CallingConvention=CallingConvention.Cdecl)]
     public extern static void ph_hashst_free(ref AudioHashStInfo hash_st);
 
     /// private ctor to keep from being instantiated.  All members are static.
