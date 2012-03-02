@@ -268,7 +268,7 @@ uint32_t insert_db(sqlite3 *db, char *inline_str){
     int err;
     sqlite3_stmt *ppdstmt = NULL;
 
-    int blen = 2*strlen(inline_str);
+    int blen = 1024;
     char *sql = (char*)malloc(blen);
     char *rowstr = (char*)malloc(blen);
     if (!sql || !rowstr){
@@ -278,7 +278,10 @@ uint32_t insert_db(sqlite3 *db, char *inline_str){
 
     parse_into_sql(inline_str, rowstr, blen);
     snprintf(sql, blen, "INSERT INTO trcks (%s) VALUES %s ;", colstr, rowstr);
-    syslog(LOG_DEBUG,"sqlstmt: %s", sql);
+    
+    syslog(LOG_DEBUG,"inline: %s", inline_str);
+    syslog(LOG_DEBUG,"rowstr: %s", rowstr);
+    syslog(LOG_DEBUG,"sql   : %s", sql);
 
     /* execute sql statement */
     err = sqlite3_prepare_v2(db, sql, strlen(sql)+1, &ppdstmt, NULL);
