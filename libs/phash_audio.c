@@ -433,7 +433,11 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
     for (i=0;i < *nbframes;i++){
 	hashtmp = 0;
 	for (m=0;m < nfilts-1;m++){
-	    H = barkcoeffs[i][m] - barkcoeffs[i][m+1];
+	    if (i > 0){
+		H = (barkcoeffs[i][m] - barkcoeffs[i][m+1]) - (barkcoeffs[i-1][m] - barkcoeffs[i-1][m+1]); 
+	    } else {
+		H = barkcoeffs[i][m] - barkcoeffs[i][m+1];
+	    }
 	    barkdiffs[m] = H;
 	    tmptoggles[m] = m;
 	    hashtmp <<= 1;
