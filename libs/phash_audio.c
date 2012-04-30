@@ -301,9 +301,8 @@ PHASH_EXPORT
 int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_toggles,\
               unsigned int *nbcoeffs, unsigned int *nbframes, double *minB, double *maxB,\
               unsigned int buflen, unsigned int P, int sr, AudioHashStInfo *hash_st){
-  int msbpos, index;
-  unsigned int i, j, m, ideal_fl, upper_fl, lower_fl, nfft, nfft_half, N, framelength, \
-                            start, end, overlap, advance;
+  int index;
+  unsigned int i, j, m, nfft, nfft_half, N, framelength, start, end, overlap, advance;
   const double maxfreq = 3000;
   double *binbarks, temp, lof, hif, bark_diff, f_bark_mid;
   double *window, **wts, *frame, *magnF, *barkdiffs, **barkcoeffs;
@@ -315,49 +314,42 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
   if (buf == NULL || phash == NULL || nbframes == NULL || hash_st == NULL) return -1;
 
   if (sr != hash_st->sr){ 
-    ideal_fl = (unsigned int)(0.4*sr);
-    msbpos = 0;
-    while (ideal_fl >> msbpos++);
-    upper_fl = 1 << (msbpos-1);
-    lower_fl = 1 << (msbpos-2);
-    hash_st->framelength = (upper_fl - lower_fl) < (ideal_fl - lower_fl) ? upper_fl :lower_fl;
-
-    hash_st->sr = sr;
-    hash_st->window = (double*)malloc((hash_st->framelength)*sizeof(double));
-    if (hash_st->window == NULL) return -1;
-
-    for (i = 0;i<hash_st->framelength;i++){
-      /*hamming window*/
-      hash_st->window[i] = 0.54 - 0.46*cos(2*PI*i/(hash_st->framelength-1));
-    }
-
-    nfft_half = hash_st->framelength/2;
-    binbarks = (double*)malloc(nfft_half*sizeof(double));
-    if (binbarks == NULL) return -1;
-
-    temp;
-    for (i=0; i < nfft_half;i++){
-      temp = i*maxfreq/nfft_half/600.0;
-      binbarks[i] = 6*log(temp + sqrt(temp*temp + 1.0));
-    }
-    
-    hash_st->wts = (double**)malloc(nfilts*sizeof(double*));
-    for (i=0;i < nfilts;i++){
-      hash_st->wts[i] = (double*)malloc(nfft_half*sizeof(double));
-      /*calculate wts for each filter */
-      f_bark_mid = barkfreqs[i]/600.0;
-      f_bark_mid = 6*log(f_bark_mid + sqrt(f_bark_mid*f_bark_mid + 1.0));
-      for (j=0;j < nfft_half ;j++){
-	bark_diff = binbarks[j] - f_bark_mid;
-	lof = -2.5*(bark_diff/barkwidth - 0.5);
-	hif = bark_diff/barkwidth + 0.5;
-	mdouble = lof < hif ? lof : hif;
-	mdouble = (mdouble < 0) ? mdouble : 0; 
-	mdouble = pow(10,mdouble);
-	hash_st->wts[i][j] = mdouble;
+      hash_st->framelength = 2048;
+      hash_st->sr = sr;
+      hash_st->window = (double*)malloc((hash_st->framelength)*sizeof(double));
+      if (hash_st->window == NULL) return -1;
+      
+      for (i = 0;i<hash_st->framelength;i++){
+	  /*hamming window*/
+	  hash_st->window[i] = 0.54 - 0.46*cos(2*PI*i/(hash_st->framelength-1));
       }
-    } 
-    free(binbarks);
+
+      nfft_half = hash_st->framelength/2;
+      binbarks = (double*)malloc(nfft_half*sizeof(double));
+      if (binbarks == NULL) return -1;
+      
+      for (i=0; i < nfft_half;i++){
+	  temp = i*maxfreq/nfft_half/600.0;
+	  binbarks[i] = 6*log(temp + sqrt(temp*temp + 1.0));
+      }
+    
+      hash_st->wts = (double**)malloc(nfilts*sizeof(double*));
+      for (i=0;i < nfilts;i++){
+	  hash_st->wts[i] = (double*)malloc(nfft_half*sizeof(double));
+	  /*calculate wts for each filter */
+	  f_bark_mid = barkfreqs[i]/600.0;
+	  f_bark_mid = 6*log(f_bark_mid + sqrt(f_bark_mid*f_bark_mid + 1.0));
+	  for (j=0;j < nfft_half ;j++){
+	      bark_diff = binbarks[j] - f_bark_mid;
+	      lof = -2.5*(bark_diff/barkwidth - 0.5);
+	      hif = bark_diff/barkwidth + 0.5;
+	      mdouble = lof < hif ? lof : hif;
+	      mdouble = (mdouble < 0) ? mdouble : 0; 
+	      mdouble = pow(10,mdouble);
+	      hash_st->wts[i][j] = mdouble;
+	  }
+      } 
+      free(binbarks);
   }
 
   N = buflen; 
@@ -440,23 +432,17 @@ int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_tog
     *phash = hash;
     for (i=0;i < *nbframes;i++){
 	hashtmp = 0;
-
 	for (m=0;m < nfilts-1;m++){
-	   if (i > 0){
-	       H = barkcoeffs[i][m] - barkcoeffs[i][m+1] - \
-                                      (barkcoeffs[i-1][m] - barkcoeffs[i-1][m+1]);
-	   } else {
-	       H = barkcoeffs[i][m] - barkcoeffs[i][m+1];
-	   }
-	   barkdiffs[m] = H;
-	   tmptoggles[m] = m;
-
-	   hashtmp <<= 1;
-	   if (H > 0){
-	       hashtmp |= 0x00000001;
-	   }
+	    H = barkcoeffs[i][m] - barkcoeffs[i][m+1];
+	    barkdiffs[m] = H;
+	    tmptoggles[m] = m;
+	    hashtmp <<= 1;
+	    if ((barkcoeffs[i][m] > 100.0 || barkcoeffs[i][m+1] > 100.0) && 
+                                      abs(H) > 10.0 && H > 0.0){
+		hashtmp |= 0x00000001;
+	    }
 	}
-
+    
         if (bit_toggles){
 	    sort_barkdiffs(barkdiffs,tmptoggles,nfilts-1);
 	    for (m=0;m<P;m++){
