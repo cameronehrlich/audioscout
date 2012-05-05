@@ -203,7 +203,7 @@ int get_hashes(const char *dir,unsigned int *nbfiles,uint32_t ***hashes,\
     *nbframes = (uint32_t*)malloc(*nbfiles*sizeof(uint32_t));
     assert(nbframes);
 
-    AudioHashStInfo hash_st;
+    AudioHashStInfo *hash_st = NULL;
     uint32_t *hash, nb;
     unsigned int i, tmpbuflen;
     int err;
@@ -228,7 +228,7 @@ int get_hashes(const char *dir,unsigned int *nbfiles,uint32_t ***hashes,\
     }
     fprintf(stdout,"\n");
 
-    ph_hashst_free(&hash_st);
+    ph_hashst_free(hash_st);
     free(files);
     free(sigbuf);
     return 0;
