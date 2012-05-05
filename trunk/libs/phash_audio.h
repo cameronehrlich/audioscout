@@ -46,15 +46,11 @@ extern "C" {
 #define SEPARATOR "/"
 #endif
 
-/* macro to toggle bit position b in uint32 type */
-#define TOGGLE_BIT(word,b)     (0x00000001 << b)^word
-
 PHASH_EXPORT
 typedef struct hash_st_info {
-  unsigned int sr;
-  unsigned int framelength;
-  double *window;
-  double **wts;
+    double *window;
+    double **wts;
+    unsigned int framelength;
 } AudioHashStInfo;
 
 
@@ -237,9 +233,9 @@ void ph_hashst_free(AudioHashStInfo *ptr);
 
 
 PHASH_EXPORT
-int audiohash(float *buf, uint32_t **phash, double ***coeffs, uint8_t ***bit_toggles,\
+int audiohash(float *buf, uint32_t **hash, double ***coeffs, uint8_t ***toggles,\
 		unsigned int *nbcoeffs, unsigned int *nbframes, double *minB, double *maxB,\
-	      unsigned int buflen, unsigned int P, int sr, AudioHashStInfo *hash_st);
+	      unsigned int buflen, unsigned int P, int sr, AudioHashStInfo **hash_st);
 
 /* lookupaudiohash                                                                               */
 /* PARAMS index_table - ptr to an opened index                                                   */

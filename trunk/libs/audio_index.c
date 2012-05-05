@@ -118,8 +118,7 @@ int addtoaudioindex(const char *dir_name, const char *idx_name, const int sr, \
     }
 
     AudioMetaData mdata;
-    AudioHashStInfo hash_st;
-    hash_st.sr = 0;
+    AudioHashStInfo *hash_st = NULL;
     char inlinestr[512];
     uint32_t hash_id;
     unsigned int i;
@@ -175,7 +174,7 @@ int addtoaudioindex(const char *dir_name, const char *idx_name, const int sr, \
 	fprintf(stdout,"error flushing index\n");
     }
 
-    ph_hashst_free(&hash_st);
+    ph_hashst_free(hash_st);
 
     free(sigbuf);
     for (i=0;i<nbfiles;i++){
@@ -247,8 +246,7 @@ int queryaudioindex(const char *dir_name, const char *idx_name, const int sr,\
     const unsigned int buflen = (1<<25)/sizeof(float);
 
     char *inlinestr;
-    AudioHashStInfo hash_st;
-    hash_st.sr = 0;
+    AudioHashStInfo *hash_st = NULL;
     int i,j;
     for (i=0;i<nbfiles;i++){
 	fprintf(stdout,"query[%3d] =  %s\n", i, files[i]);
@@ -305,7 +303,7 @@ int queryaudioindex(const char *dir_name, const char *idx_name, const int sr,\
 	free(coeffs);
 	free(phash);
     }
-    ph_hashst_free(&hash_st);
+    ph_hashst_free(hash_st);
     close_audioindex(audio_index, 0);
     close_audiodata_db(mdatastore);
 
