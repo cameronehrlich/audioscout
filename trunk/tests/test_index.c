@@ -62,8 +62,7 @@ void test_audiohash(){
   uint8_t **toggles = NULL;
   double minB, maxB;
  
-  AudioHashStInfo hash_st;
-  hash_st.sr = 0;
+  AudioHashStInfo *hash_st = NULL;
 
   int res = audiohash(sig, &phash, &coeffs, &toggles, &nbcoeffs, &nbframes, &minB, &maxB,\
 		      nbsamples, P, sr, &hash_st);
@@ -81,6 +80,7 @@ void test_audiohash(){
     free(coeffs[i]);
     free(toggles[i]);
   }
+  free(hash_st);
   free(coeffs);
   free(toggles);
 

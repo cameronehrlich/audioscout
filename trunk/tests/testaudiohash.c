@@ -51,8 +51,7 @@ int main (int argc, char **argv){
 
   unsigned int buflen = 0;
 
-  AudioHashStInfo hash_st;
-  hash_st.sr = 0;
+  AudioHashStInfo *hash_st = NULL;
 
   clock_t total = 0;
   unsigned int i;
@@ -81,7 +80,7 @@ int main (int argc, char **argv){
     printf("hash %p, nbframes %u, %f seconds\n", hash, nbframes,secs);
 
     ph_free(hash);
-    ph_hashst_free(&hash_st);
+    ph_hashst_free(hash_st);
     ph_free(buf);
   }
 

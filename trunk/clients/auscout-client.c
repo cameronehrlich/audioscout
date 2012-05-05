@@ -84,8 +84,7 @@ int main(int argc, char **argv){
 	exit(1);
     }
 
-    AudioHashStInfo hash_st;
-    hash_st.sr = 0;
+    AudioHashStInfo *hash_st = NULL;
 
     void *ctx = zmq_init(1);
     if (ctx == NULL){
@@ -197,7 +196,7 @@ int main(int argc, char **argv){
     }
     
     /* cleanup */
-    ph_hashst_free(&hash_st);
+    ph_hashst_free(hash_st);
     free(sigbuf);
     zmq_close(skt);
     zmq_term(ctx);
