@@ -34,13 +34,14 @@
 
 
 int main(int argc, char **argv){
-    if (argc < 5){
+    if (argc < 6){
 	printf("not enough input args\n");
-	printf("usage: %s dir server_addr command nbsecs\n", argv[0]);
+	printf("usage: %s dir server_addr command nbsecs P\n", argv[0]);
 	printf("   dir - name of direcotry from which you want to take files from\n");
 	printf("   server_addr - address of auscoutd server - e.g. tcp://localhost:4005\n");
 	printf("   command     - command to auscoutd,  1 for query, 2 for submit\n");
 	printf("   nbsecs      - number of secs from files, starting from beginning of file \n");
+	printf("   P           - number permutations to consider in hash lookups \n");
 	exit(1);
     }
     wchar_t wcs_str[512];
@@ -48,7 +49,7 @@ int main(int argc, char **argv){
     const char *server_address = argv[2];             /*tcp://localhost:5000 */
     const uint8_t command = (uint8_t)atoi(argv[3]);    /* cmd = 1 query, cmd = 2 submissions */
     const float nbsecs = atof(argv[4]);
-    const unsigned int P = 0;
+    const unsigned int P = atoi(argv[5]);
 
     if (nbsecs < 0.0f){
 	fprintf(stdout,"bad nbsecs parameter - cannot be less than 0\n");
@@ -110,9 +111,10 @@ int main(int argc, char **argv){
     char mdata_inline[512];
     uint32_t nbframes = 0, snbframes = 0, uid = 0, *hash = NULL;
     int error;
-    unsigned int i, j;
+    unsigned int i, j, k;
     char *result_str;
     uint8_t *data;
+    uint8_t **toggles = NULL;
     for (i=0;i<nbfiles;i++){
 	mdata_inline[0] = '\n';
 	unsigned int tmpbuflen = buflen;
@@ -127,7 +129,7 @@ int main(int argc, char **argv){
 	    continue;
 	}
 
-	if (audiohash(buf, &hash, NULL, NULL, NULL, &nbframes, NULL, NULL,\
+	if (audiohash(buf, &hash, NULL, &toggles, NULL, &nbframes, NULL, NULL,\
                          tmpbuflen, P, sr, &hash_st) < 0){
 	    fwprintf(stdout,L"unable to get hash\n\n");
 	    if (buf != sigbuf) ph_free(buf);
@@ -141,6 +143,7 @@ int main(int argc, char **argv){
 
 	if (buf != sigbuf)ph_free(buf);
 
+	uint8_t perms = (uint8_t)P;
 	int64_t more;
 	size_t msg_size, more_size = sizeof(int64_t);
 	snbframes = hosttonet32(nbframes);
@@ -150,7 +153,14 @@ int main(int argc, char **argv){
 
 	    sendmore_msg_vsm(skt, &cmd, sizeof(uint8_t));
 	    sendmore_msg_vsm(skt, &snbframes, sizeof(uint32_t));
-	    send_msg_data(skt, hash, nbframes*sizeof(uint32_t), free_fn, NULL);
+	    sendmore_msg_data(skt, hash, nbframes*sizeof(uint32_t), free_fn, NULL);
+	    if (P > 0 && toggles){
+		sendmore_msg_vsm(skt, &perms, sizeof(uint8_t));
+		for (k = 0;k < nbframes;k++){
+		    sendmore_msg_data(skt, toggles[k], P*sizeof(uint8_t), free_fn, NULL);
+		}
+	    }
+	    send_empty_msg(skt);
 
 	    /* recieve response */ 
 	    recieve_msg(skt, &msg_size, &more, &more_size, (void**)&result_str);

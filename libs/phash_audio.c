@@ -40,13 +40,15 @@
 #define TOGGLE_BIT(word,b)     (0x80000000 >> b)^word
 
 static const unsigned int nfilts = 33;
+static const double MaxFreq = 3000.0;
 static const double BarkWidth = 1.06;
-static const double BarkFreqs[33] = { 50.0, 100.0,  150.0, 200.0, 250.0,\
-                                          300.0, 350.0, 400.0, 450.0, 470.0, 510.0, 570.0,\
-                                          635.0, 700.0, 770.0, 840.0, 920.0, 1000.0,\
-                                          1085.0, 1170.0, 1270.0, 1370.0, 1485.0,\
-                                          1600.0, 1725.0, 1850.0, 2000.0, 2150.0,\
-				          2325.0, 2500.0, 2700.0, 2900.0, 3000.0 }; 
+static const double BarkFreqs[33] = {   50.0,  75.0,  100.0,  125.0,  150.0,   200.0,   250.0,   300.0, 
+                                       350.0, 400.0,  450.0,  510.0,  570.0,   635.0,   700.0,   770.0, 
+                                       840.0, 920.0, 1000.0, 1085.0, 1170.0,  1270.0,  1370.0,  1485.0, 
+                                      1600.0,1725.0, 1850.0, 2000.0, 2150.0,  2325.0,  2500.0,  2700.0, 
+                                      2900.0
+                                     };
+
 
 
 #ifndef JUST_AUDIOHASH
@@ -271,7 +273,6 @@ void ph_hashst_free(AudioHashStInfo *ptr){
 }
 
 static double** GetWts(const int nfft_half){
-    const double maxfreq = 3000.0;
     double **wts = (double**)malloc(nfilts*sizeof(double*));
 
     int i, j;
@@ -280,7 +281,12 @@ static double** GetWts(const int nfft_half){
     if (binbarks == NULL) return NULL;
 
     for (i=0; i < nfft_half;i++){
-	double temp = i*maxfreq/(double)nfft_half/600.0;
+	/* frequency of point on axis */
+	double temp = i*MaxFreq/(double)nfft_half;
+
+	/* asinh implentation freq => bark number conversion */
+	/* approx of: bark = 6*arcsinh(freq/600)             */
+	temp /= 600.0;
 	binbarks[i] = 6*log(temp + sqrt(temp*temp + 1.0));
     }
 
@@ -367,10 +373,10 @@ int audiohash(float *buf, uint32_t **hash, double ***coeffs, uint8_t ***toggles,
     int overlap = 31*framelength/32;
     int advance = framelength - overlap;
     int totalframes = (int)(floor(buflen/advance) - floor(framelength/advance) + 1);
-    int nbhashes = totalframes - 1;
+    int nbhashes = totalframes - 2;
     *nbframes = nbhashes;
 
-    *hash = (uint32_t*)malloc(nbhashes*sizeof(uint32_t));
+    *hash = (uint32_t*)calloc(nbhashes,sizeof(uint32_t));
     uint8_t *tmptoggles = NULL;
     if (P > 0 && toggles){
 	 tmptoggles = (uint8_t*)malloc((nfilts-1)*sizeof(uint8_t));
@@ -399,11 +405,21 @@ int audiohash(float *buf, uint32_t **hash, double ***coeffs, uint8_t ***toggles,
 	
 	for (i = 0;i < nfft_half;i++){
 	    magnF[i] = complex_abs(pF[i]);
+	    /* channel normalization ??? */
+	    /*  magnF[i] = log(magnF[i]; */
 	    if (magnF[i] > maxF){
 		maxF = magnF[i];
 	    }
 	}
+	
+	/* channel normalization ??? */
+	/*
+	for (i = 0;i < nfft_half;i++){
+	    magnF[i] = exp(magnF[i]/maxF) + 1;
+	}
+	*/
 
+	/* critical band integration */
 	for (i = 0;i < nfilts;i++){
 	    barkcoeffs[index][i] = 0.0;
 	    for (j = 0;j < nfft_half;j++){
@@ -416,17 +432,18 @@ int audiohash(float *buf, uint32_t **hash, double ***coeffs, uint8_t ***toggles,
 		minbark = barkcoeffs[index][i];
 	    }
 	}
+
 	index += 1;
 	start += advance;
 	end += advance;
     }
 
     index = 0;
-    for (i = 1;i < totalframes;i++){
+    for (i = 1;i < totalframes - 1;i++){
 	uint32_t hashvalue = 0;
 	int m;
 	for (m=0;m < nfilts-1;m++){
-	    double diff = (barkcoeffs[i][m] - barkcoeffs[i][m+1]) - (barkcoeffs[i-1][m] - barkcoeffs[i-1][m+1]);
+	    double diff = (barkcoeffs[i+1][m] - barkcoeffs[i+1][m+1]) - (barkcoeffs[i-1][m] - barkcoeffs[i-1][m+1]);
 	    if (tmptoggles) tmptoggles[m] = (uint8_t)m;
 	    hashvalue <<= 1;
 	    if (diff > 0){
@@ -462,6 +479,23 @@ int audiohash(float *buf, uint32_t **hash, double ***coeffs, uint8_t ***toggles,
 }
 
 #ifndef JUST_AUDIOHASH
+
+static int GetCandidates2(uint32_t hashvalue, uint8_t *toggles, const unsigned int P, uint32_t **pcands, int *nbcandidates){
+    const int NbCandidates = 32;
+    *nbcandidates = NbCandidates + 1;
+    *pcands = (uint32_t*)malloc((NbCandidates+1)*sizeof(uint32_t));
+    (*pcands)[0] = hashvalue;
+    
+    uint32_t mask = 0x80000000;
+    int i;
+    for (i = 0;i < NbCandidates;i++){
+	uint32_t currentValue = hashvalue;
+	currentValue = TOGGLE_BIT(currentValue, i);
+	(*pcands)[i+1] = currentValue;
+    }
+
+    return 0;
+}
 
 static int GetCandidates(uint32_t hashvalue, uint8_t *toggles, const unsigned int P, uint32_t **pcands, int *nbcandidates){
     int n = 1 << P;
@@ -512,7 +546,10 @@ int lookupaudiohash(AudioIndex index_table,uint32_t *hash,uint8_t **toggles, int
 	subhash = hash+i;
 	for (j=0;j<blocksize;j++){
 	    curr_toggles = (toggles) ? toggles[i+j] : NULL;
-	    GetCandidates(subhash[j], curr_toggles, P, &candidates, &nbcandidates);
+
+	    /* expand hash candidates */
+	    GetCandidates(subhash[j], curr_toggles, P, &candidates, &nbcandidates); 
+	    /* GetCandidates2(subhash[j], curr_toggles, P, &candidates, &nbcandidates); */ 
 
 	    for (k = 0;k < nbcandidates; k++){
 		lookup_val = NULL;
