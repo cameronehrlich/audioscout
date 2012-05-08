@@ -45,7 +45,7 @@
 #define LOCKFILE "auscout.lock"
 #define MAX_TABLES 255
 
-#define WAIT_TIME_SECONDS 20
+#define WAIT_TIME_SECONDS 5
 #define INPROC_REQUEST_ADDRESS  "inproc://querys"
 #define INPROC_PUBLISH_ADDRESS "inproc://publish"
 #define INPROC_RESULT_ADDRESS  "inproc://result"

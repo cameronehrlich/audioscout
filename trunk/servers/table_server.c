@@ -86,8 +86,8 @@ void init_options(){
     GlobalArgs.server_address = NULL;
     GlobalArgs.index_name = NULL;
     GlobalArgs.port = 4005;
-    GlobalArgs.blocksize = 256;
-    GlobalArgs.threshold = 0.015;
+    GlobalArgs.blocksize = 128;  /* or 256 */
+    GlobalArgs.threshold = 0.02; /* or .015 */
     GlobalArgs.nbthreads = 60;
     GlobalArgs.verboseflag = 0;
     GlobalArgs.helpflag = 0;
@@ -148,8 +148,8 @@ void tableserver_usage(){
     fprintf(stdout," -w <working dir>        working dir to run tableserver default \"tmp\"\n"); 
     fprintf(stdout," -l <log level>          log level 0 and 1  to 8(0,LOG_EMERG...LOG_DEBUG\n");
     fprintf(stdout,"                         log levels correspond to those in syslog.h\n");
-    fprintf(stdout," -b <block size>         blocksize for performing lookup,  default 256\n");
-    fprintf(stdout," -t <threshold>          threshold for performing lookup, default 0.015\n");
+    fprintf(stdout," -b <block size>         blocksize for performing lookup,  default 128\n");
+    fprintf(stdout," -t <threshold>          threshold for performing lookup, default 0.020\n");
     fprintf(stdout," -n <threads>            number of worker threads, default is 60\n");
     fprintf(stdout," -i <index name>         path and name of index file - mandatory\n");
 }  
@@ -513,7 +513,7 @@ static int thread_count = 0;
 
 
 /* aux function to worker threads to retrieve optional message parts */
-static uint8_t**retrieve_extra(void *pullskt, uint32_t nbframes, uint8_t *perms){
+static uint8_t** retrieve_extra(void *pullskt, uint32_t nbframes, uint8_t *perms){
     uint8_t **toggles = NULL;
     void *data;
     int64_t more;
@@ -525,7 +525,7 @@ static uint8_t**retrieve_extra(void *pullskt, uint32_t nbframes, uint8_t *perms)
 	if (more) flushall_msg_parts(pullskt);
 	return NULL;
     }
-    if (msg_size != sizeof(uint8_t) || !more){
+    if (msg_size != sizeof(uint8_t) && !more){
 	if (more) flushall_msg_parts(pullskt);
 	free(data);
 	return NULL;
