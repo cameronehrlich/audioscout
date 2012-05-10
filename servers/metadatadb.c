@@ -201,7 +201,7 @@ void kill_process(){
     closelog();
 }
 
-static const char delim[4] = {0x20, 0x1E, 0x20, 0x00};
+static const char delim[4] = { 0x1E, 0x00};
 static const char space = 32;
 
 int parse_into_sql(char *mdata, char *sql, int len){
@@ -268,7 +268,7 @@ uint32_t insert_db(sqlite3 *db, char *inline_str){
     int err;
     sqlite3_stmt *ppdstmt = NULL;
 
-    int blen = 1024;
+    const int blen = 1024;
     char *sql = (char*)malloc(blen);
     char *rowstr = (char*)malloc(blen);
     if (!sql || !rowstr){
@@ -326,7 +326,9 @@ char* lookup_db(sqlite3 *db, uint32_t uid){
 	    } else {
 		strncat(rowstr, " ", 1);
 	    }
-	    strncat(rowstr, delim, 3);
+	    strncat(rowstr, " " , 1);
+	    strncat(rowstr, delim, 1);
+	    strncat(rowstr, " " , 1);
 	}
 	strncat(rowstr, presulttable[ncols+i], strlen(presulttable[ncols+i]));
     }
