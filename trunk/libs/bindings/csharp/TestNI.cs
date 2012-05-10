@@ -42,7 +42,9 @@ class TestPHashAudioBindings
 
     // read audio 
     Int32 err = 0;
-    float[] buf = AudioData.readaudio(file, 6000, 0, ref mdata, ref err);
+    Int32 sr = 6000;
+    Int32 P = 0;
+    float[] buf = AudioData.readaudio(file, 6000, sr, ref mdata, ref err);
     if (buf == null)
       {
 	System.Console.WriteLine("error reading audio: " + err);
@@ -64,10 +66,12 @@ class TestPHashAudioBindings
     // create AudioHashStInfo struct
     // This holds information commonly used information that can be used
     // across hash calculations, to keep from having to realloc and recalc.
-    PHashAudio.AudioHashStInfo hashst = new PHashAudio.AudioHashStInfo();
+    IntPtr hashst = IntPtr.Zero;
 
     // calculate hash for signal buffer 
-    Int32[] hasharray = PHashAudio.audiohash(buf, 6000, ref hashst);
+    double[][] coeffs = null;
+    byte[][] toggles = null;
+    UInt32[] hasharray = PHashAudio.audiohash(buf, sr, P, ref coeffs, ref toggles, ref hashst);
     if (hasharray == null)
       {
 	System.Console.WriteLine("problem calculating hash.");
@@ -82,7 +86,9 @@ class TestPHashAudioBindings
 
     // cleanup members of struct AudioHashStInfo
     // Invoke when finished hashing a group of files.
-    PHashAudio.ph_hashst_free(ref hashst);
+    PHashAudio.ph_hashst_free(hashst);
+
+  
     return 0;   
   }
 }
