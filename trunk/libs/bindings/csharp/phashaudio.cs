@@ -35,35 +35,36 @@ namespace PHash
     /// <param name="AudioHashStInfo">hash_st, ref to structure to hold commonly used info across calcs.</param>
     /// <returns>Int32[] array of hash values</returns>
 
-    public static UInt32[] audiohash(float[] buf, Int32 sr, Int32 P,
- 				     ref double[][] coeffs,
+    public static Int32[] audiohash(float[] buf, Int32 sr, Int32 P,
 				     ref byte[][] toggles,
 				     ref IntPtr hash_st)
     {
-      UInt32[] hash = null;
+      IntPtr hashptr = IntPtr.Zero;
+      IntPtr pcoeffs = IntPtr.Zero;
+      IntPtr ptoggles = IntPtr.Zero;
       UInt32 nbcoeffs = 0;
       UInt32 nbframes = 0;
       double minB = 0.0;
       double maxB = 0.0;
-      IntPtr[] coefficients = null;
-      IntPtr[] bittoggles = null;
-      int err = audiohash(buf, ref hash, ref coefficients, ref bittoggles, ref nbcoeffs, ref nbframes, ref minB, 
+      int err = audiohash(buf, ref hashptr, ref pcoeffs, ref ptoggles, ref nbcoeffs, ref nbframes, ref minB, 
                           ref maxB, (UInt32)buf.Length, (UInt32)P, sr, ref hash_st);
 
+      Int32[] hash = new Int32[nbframes];
+      Marshal.Copy(hashptr, hash, 0, (int)nbframes);
 
-      coeffs = new double[nbframes][];
       toggles = new byte[nbframes][];
-      for (int i=0;i < nbframes;i++)
-      {
-        coeffs[i] = new double[nbcoeffs];
-	Marshal.Copy(coefficients[i], coeffs[i], 0, (Int32)nbcoeffs);
+      for (int i = 0;i < nbframes;i++){
+      	  toggles[i] = new byte[P];
 
-	toggles[i] = new byte[P];
-	Marshal.Copy(bittoggles[i], toggles[i], 0, P);
+	  IntPtr togglerow = (IntPtr)Marshal.PtrToStructure(ptoggles+i, typeof(IntPtr));
+	  Marshal.Copy(togglerow, toggles[i], 0, P);
 
-	ph_free(coefficients[i]);
-	ph_free(bittoggles[i]);
+	  ph_free(togglerow);
       }
+
+      ph_free(hashptr);
+      ph_free(ptoggles);
+      ph_free(pcoeffs);
 
       return hash;
     }
@@ -72,9 +73,9 @@ namespace PHash
     ///   aux. extern function to native library
     /// </summary>
     [DllImport("libpHashAudio.dll", CallingConvention=CallingConvention.Cdecl)]
-    private extern static int audiohash(float[] buf, ref UInt32[] hash, ref IntPtr[] coeffs, ref IntPtr[] toggles,  
-                                             ref UInt32 nbcoeffs, ref UInt32 nbframes, ref double minB, ref double maxB, 
-                                             UInt32 buflen, UInt32 P, Int32 sr, ref IntPtr hash_st); 
+    private extern static int audiohash(float[] buf, ref IntPtr hash, ref IntPtr coeffs, ref IntPtr toggles,  
+                                        ref UInt32 nbcoeffs, ref UInt32 nbframes, ref double minB, ref double maxB, 
+                                         UInt32 buflen, UInt32 P, Int32 sr, ref IntPtr hash_st); 
 
     /// <summary>
     ///   aux free function to free hash array in unmanaged code.

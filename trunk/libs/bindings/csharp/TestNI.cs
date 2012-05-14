@@ -43,7 +43,7 @@ class TestPHashAudioBindings
     // read audio 
     Int32 err = 0;
     Int32 sr = 6000;
-    Int32 P = 0;
+    Int32 P = 3;
     float[] buf = AudioData.readaudio(file, 6000, sr, ref mdata, ref err);
     if (buf == null)
       {
@@ -69,15 +69,17 @@ class TestPHashAudioBindings
     IntPtr hashst = IntPtr.Zero;
 
     // calculate hash for signal buffer 
-    double[][] coeffs = null;
     byte[][] toggles = null;
-    UInt32[] hasharray = PHashAudio.audiohash(buf, sr, P, ref coeffs, ref toggles, ref hashst);
+    Int32[] hasharray = PHashAudio.audiohash(buf, sr, P, ref toggles, ref hashst);
     if (hasharray == null)
       {
 	System.Console.WriteLine("problem calculating hash.");
 	return -1;
       }
 
+    for (int i=0;i<hasharray.Length;i++){
+    	System.Console.WriteLine(hasharray[i]);
+    }
 
     System.Console.WriteLine("buffer hashed to " + hasharray.Length + " frames");
 
