@@ -43,7 +43,7 @@ class TestPHashAudioBindings
     // read audio 
     Int32 err = 0;
     Int32 sr = 6000;
-    Int32 P = 3;
+    Int32 P = 9;
     float[] buf = AudioData.readaudio(file, 6000, sr, ref mdata, ref err);
     if (buf == null)
       {
@@ -77,10 +77,13 @@ class TestPHashAudioBindings
 	return -1;
       }
 
-    for (int i=0;i<hasharray.Length;i++){
-    	System.Console.WriteLine(hasharray[i]);
+    for (int i=0;i<hasharray.Length;i+=1000){
+    	System.Console.Write(hasharray[i] + " ");
+	for (int j=0;j<P;j++){
+	    System.Console.Write(" " + toggles[i][j] + " ");
+	}
+	System.Console.WriteLine("");
     }
-
     System.Console.WriteLine("buffer hashed to " + hasharray.Length + " frames");
 
     // cleanup members of struct AudioMetaData
