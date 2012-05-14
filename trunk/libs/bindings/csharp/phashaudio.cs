@@ -39,42 +39,42 @@ namespace PHash
 				     ref byte[][] toggles,
 				     ref IntPtr hash_st)
     {
-      IntPtr hashptr = IntPtr.Zero;
-      IntPtr pcoeffs = IntPtr.Zero;
-      IntPtr ptoggles = IntPtr.Zero;
-      UInt32 nbcoeffs = 0;
-      UInt32 nbframes = 0;
-      double minB = 0.0;
-      double maxB = 0.0;
-      int err = audiohash(buf, ref hashptr, ref pcoeffs, ref ptoggles, ref nbcoeffs, ref nbframes, ref minB, 
-                          ref maxB, (UInt32)buf.Length, (UInt32)P, sr, ref hash_st);
 
-      Int32[] hash = new Int32[nbframes];
-      Marshal.Copy(hashptr, hash, 0, (int)nbframes);
+        System.Console.WriteLine("buf length: {0}, sr: {1}, P: {2}", buf.Length, sr, P);
 
-      toggles = new byte[nbframes][];
-      for (int i = 0;i < nbframes;i++){
-      	  toggles[i] = new byte[P];
+	IntPtr hashptr = IntPtr.Zero;
+	IntPtr coeffs  = IntPtr.Zero;
+	IntPtr ptoggles = IntPtr.Zero;
+	UInt32 nbcoeffs = 0;
+	UInt32 nbframes = 0;
+	double minB = 0.0;
+	double maxB = 0.0;
+	audiohash(buf, out hashptr, out coeffs, out ptoggles, out nbcoeffs, out nbframes, out minB, out maxB, 
+                               (UInt32)buf.Length, (UInt32)P, sr, ref hash_st);
 
-	  IntPtr togglerow = (IntPtr)Marshal.PtrToStructure(ptoggles+i, typeof(IntPtr));
-	  Marshal.Copy(togglerow, toggles[i], 0, P);
+	Int32[] hash = new Int32[nbframes];
+	Marshal.Copy(hashptr, hash, 0, (int)nbframes);
+	ph_free(hashptr);
 
-	  ph_free(togglerow);
-      }
+	toggles = new byte[nbframes][];
+	for (int i=0;i<nbframes;i++){
+	    toggles[i] = new byte[P];
+	    IntPtr v = Marshal.ReadIntPtr(ptoggles, i*Marshal.SizeOf(typeof(IntPtr)));
+	    Marshal.Copy(v, toggles[i], 0, P);
+	    ph_free(v);
+	}
 
-      ph_free(hashptr);
-      ph_free(ptoggles);
-      ph_free(pcoeffs);
+	ph_free(ptoggles);
 
-      return hash;
+        return hash;
     }
     
     /// <summary>
     ///   aux. extern function to native library
     /// </summary>
     [DllImport("libpHashAudio.dll", CallingConvention=CallingConvention.Cdecl)]
-    private extern static int audiohash(float[] buf, ref IntPtr hash, ref IntPtr coeffs, ref IntPtr toggles,  
-                                        ref UInt32 nbcoeffs, ref UInt32 nbframes, ref double minB, ref double maxB, 
+    private extern static int audiohash(float[] buf, out IntPtr hash, out IntPtr coeffs, out IntPtr toggles,  
+                                        out UInt32 nbcoeffs, out UInt32 nbframes, out double minB, out double maxB, 
                                          UInt32 buflen, UInt32 P, Int32 sr, ref IntPtr hash_st); 
 
     /// <summary>
