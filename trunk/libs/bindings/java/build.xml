@@ -1,4 +1,4 @@
-<project name="pHashPro" default="compile" >
+<project name="phashAudio-jni" default="compile" >
 
   <target name="init" description="creates some directories">
     <mkdir dir="build/classes"/>
@@ -18,14 +18,16 @@
 
   <target name="compile" depends="init,create-manifest" description="Compiles the source code and creates a jar in dist/">
     <javac srcdir="org/" destdir="build/classes/" debug="true" debuglevel="lines,vars,source" />
-    <jar destfile="dist/pHashPro.jar" basedir="build/classes/" manifest="build/MANIFEST.MF"/>
+    <jar destfile="dist/pHashAudio.jar" basedir="build/classes/" manifest="build/MANIFEST.MF"/>
     <echo>compilation complete!</echo>
   </target>
 
   <target name="header" depends="compile" >
 	<javah destdir="." force="yes" verbose="yes" classpath="./build/classes/">
-	  
-	  <class name="org.pHash.pHash" />
+	  <class name="org.pHash.AudioData" />
+	  <class name="org.pHash.AudioMetaData" />
+	  <class name="org.pHash.AudioHash" />
+	  <class name="org.pHash.AudioHash.AudioHashObject" />
 	</javah>
   </target>
 </project>
