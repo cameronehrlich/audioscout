@@ -89,10 +89,12 @@ JNIEXPORT jobject JNICALL Java_org_phash_AudioHash_audioHash(JNIEnv *env, jclass
 
     jbyteArray byteArrayRow = env->NewByteArray(P);
     jobjectArray togglesArray = (jobjectArray)env->NewObjectArray(nbframes, env->GetObjectClass(byteArrayRow), 0);
+    env->DeleteLocalRef(byteArrayRow);
 
     jdoubleArray doubleArrayRow = env->NewDoubleArray(nbcoeffs);
-    jobjectArray coeffsArray = (jobjectArray)env->NewObjectArray(nbframes, env->GetObjectClass(doubleArrayRow), 0);
-    
+    jobjectArray coeffsArray = (jobjectArray)env->NewObjectArray(nbframes+2, env->GetObjectClass(doubleArrayRow), 0);
+    env->DeleteLocalRef(doubleArrayRow);
+
     for (unsigned int i=0;i<nbframes;i++){
 	byteArrayRow = env->NewByteArray(P);
 	env->SetByteArrayRegion(byteArrayRow, 0, P, (jbyte*)toggles[i]);
@@ -103,7 +105,20 @@ JNIEXPORT jobject JNICALL Java_org_phash_AudioHash_audioHash(JNIEnv *env, jclass
 	env->SetDoubleArrayRegion(doubleArrayRow, 0, nbcoeffs, (jdouble*)coeffs[i]);
 	env->SetObjectArrayElement(coeffsArray, i, doubleArrayRow);
 	ph_free(coeffs[i]);
+
+	env->DeleteLocalRef(byteArrayRow);
+	env->DeleteLocalRef(doubleArrayRow);
     }
+
+    doubleArrayRow = env->NewDoubleArray(nbcoeffs);
+    env->SetDoubleArrayRegion(doubleArrayRow, 0, nbcoeffs, (jdouble*)coeffs[nbframes]);
+    ph_free(coeffs[nbframes]);
+    env->DeleteLocalRef(doubleArrayRow);
+
+    doubleArrayRow = env->NewDoubleArray(nbcoeffs);
+    env->SetDoubleArrayRegion(doubleArrayRow, 0, nbcoeffs, (jdouble*)coeffs[nbframes+1]);
+    ph_free(coeffs[nbframes+1]);
+    env->DeleteLocalRef(doubleArrayRow);
 
     jclass audiohashclass = env->FindClass("org/phash/AudioHashObject");
 
