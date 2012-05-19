@@ -34,7 +34,7 @@ public class TestAudio {
 
 	AudioHashObject hashObj = AudioHash.audioHash(samples, P, sr);
 
-	System.out.println("Audio Hash, P = " + P);
+	System.out.println("Audio Hash, nbframes " + hashObj.hash.length + " , P = " + P);
 	for (int i=0;i<hashObj.hash.length;i+=1000){
 	    System.out.print("hash[" + i + "] = " + hashObj.hash[i] + " ");
 	    for (int j=0;j<P;j++){
