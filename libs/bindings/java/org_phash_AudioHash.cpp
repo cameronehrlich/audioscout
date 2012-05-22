@@ -38,6 +38,7 @@ JNIEXPORT jfloatArray JNICALL Java_org_phash_AudioHash_readAudio
     jfieldID tpe3field      = env->GetFieldID(mdataclass, "tpe3"     , "Ljava/lang/String;" );
     jfieldID tpe4field      = env->GetFieldID(mdataclass, "tpe4"     , "Ljava/lang/String;" );
     jfieldID datefield      = env->GetFieldID(mdataclass, "date"     , "Ljava/lang/String;" );
+    jfieldID albumfield     = env->GetFieldID(mdataclass, "album"    , "Ljava/lang/String;" );
     jfieldID genrefield     = env->GetFieldID(mdataclass, "genre"    , "Ljava/lang/String;" );
     jfieldID yearfield      = env->GetFieldID(mdataclass, "year"     , "I");
     jfieldID durationfield  = env->GetFieldID(mdataclass, "duration" , "I");
@@ -53,6 +54,7 @@ JNIEXPORT jfloatArray JNICALL Java_org_phash_AudioHash_readAudio
     if (tpe3field   != 0)   env->SetObjectField(mdataObj, tpe3field,      env->NewStringUTF(mdata.tpe3));
     if (tpe4field   != 0)   env->SetObjectField(mdataObj, tpe4field,      env->NewStringUTF(mdata.tpe4));
     if (datefield   != 0)   env->SetObjectField(mdataObj, datefield,      env->NewStringUTF(mdata.date));
+    if (albumfield  != 0)   env->SetObjectField(mdataObj, albumfield,     env->NewStringUTF(mdata.album));
     if (genrefield  != 0)   env->SetObjectField(mdataObj, genrefield,     env->NewStringUTF(mdata.genre));
     if (yearfield   != 0)   env->SetIntField(mdataObj   , yearfield,      mdata.year);
     if (durationfield != 0) env->SetIntField(mdataObj   , durationfield,  mdata.duration);
@@ -72,16 +74,23 @@ JNIEXPORT jobject JNICALL Java_org_phash_AudioHash_audioHash(JNIEnv *env, jclass
     jboolean iscopy;
     uint32_t *hash = NULL;
     AudioHashStInfo *hash_st = NULL;
-    double **coeffs;
+    double **coeffs ;
     uint8_t **toggles;
     unsigned int nbframes;
     unsigned int nbcoeffs;
     unsigned int buflen = env->GetArrayLength(buf);
     float *buf2 = env->GetFloatArrayElements(buf, &iscopy);
 
-    if (audiohash(buf2, &hash, &coeffs, &toggles, &nbcoeffs, &nbframes, NULL, NULL, buflen, P, sr, &hash_st) < 0){
-	env->ReleaseFloatArrayElements(buf, buf2, JNI_FALSE);
-	return NULL;
+    if (P > 0){
+	if (audiohash(buf2, &hash, &coeffs, &toggles, &nbcoeffs, &nbframes, NULL, NULL, buflen, P, sr, &hash_st) < 0){
+	    env->ReleaseFloatArrayElements(buf, buf2, JNI_FALSE);
+	    return NULL;
+	}
+    } else {
+	if (audiohash(buf2, &hash, &coeffs, NULL, &nbcoeffs, &nbframes, NULL, NULL, buflen, P, sr, &hash_st) < 0){
+	    env->ReleaseFloatArrayElements(buf, buf2, JNI_FALSE);
+	    return NULL;
+	}
     }
 
     jintArray hasharray = env->NewIntArray(nbframes);
@@ -96,17 +105,18 @@ JNIEXPORT jobject JNICALL Java_org_phash_AudioHash_audioHash(JNIEnv *env, jclass
     env->DeleteLocalRef(doubleArrayRow);
 
     for (unsigned int i=0;i<nbframes;i++){
-	byteArrayRow = env->NewByteArray(P);
-	env->SetByteArrayRegion(byteArrayRow, 0, P, (jbyte*)toggles[i]);
-	env->SetObjectArrayElement(togglesArray, i, byteArrayRow);
-	ph_free(toggles[i]);
+	if (P > 0){
+	    byteArrayRow = env->NewByteArray(P);
+	    env->SetByteArrayRegion(byteArrayRow, 0, P, (jbyte*)toggles[i]);
+	    env->SetObjectArrayElement(togglesArray, i, byteArrayRow);
+	    ph_free(toggles[i]);
+	    env->DeleteLocalRef(byteArrayRow);
+	}
 
 	doubleArrayRow = env->NewDoubleArray(nbcoeffs);
 	env->SetDoubleArrayRegion(doubleArrayRow, 0, nbcoeffs, (jdouble*)coeffs[i]);
 	env->SetObjectArrayElement(coeffsArray, i, doubleArrayRow);
 	ph_free(coeffs[i]);
-
-	env->DeleteLocalRef(byteArrayRow);
 	env->DeleteLocalRef(doubleArrayRow);
     }
 
@@ -135,7 +145,7 @@ JNIEXPORT jobject JNICALL Java_org_phash_AudioHash_audioHash(JNIEnv *env, jclass
 
     ph_free(hash);
     ph_free(coeffs);
-    ph_free(toggles);
+    if (P > 0) ph_free(toggles);
     ph_hashst_free(hash_st);
     env->ReleaseFloatArrayElements(buf, buf2, JNI_FALSE);
 
