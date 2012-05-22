@@ -86,7 +86,7 @@ void init_options(){
     GlobalArgs.level = LOG_UPTO(LOG_ERR);
     GlobalArgs.audiodb_addr = NULL;
     GlobalArgs.port = 4005;
-    GlobalArgs.threshold = 0.020;
+    GlobalArgs.threshold = 0.050;
     GlobalArgs.nbthreads = 10;
     GlobalArgs.verboseflag = 0;
     GlobalArgs.helpflag = 0;
@@ -138,7 +138,7 @@ void auscout_usage(){
     fprintf(stdout,"-w <working dir>    working directory for the server - default %s\n",\
                                                                            WORKING_DIR);
     fprintf(stdout,"-l <logging level>  log level 0-7 - default LOG_ERR\n");
-    fprintf(stdout,"-t <threshold>      threshold value (default 0.020\n");
+    fprintf(stdout,"-t <threshold>      threshold value (default 0.050\n");
     fprintf(stdout,"-n <nbthreads>      number of threads to run in server, default 10\n");
     fprintf(stdout,"-v verbose flag     more logging information - not implemented\n");
     fprintf(stdout,"-h help info        print this help \n");

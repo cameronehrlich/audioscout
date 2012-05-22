@@ -86,8 +86,8 @@ void init_options(){
     GlobalArgs.server_address = NULL;
     GlobalArgs.index_name = NULL;
     GlobalArgs.port = 4005;
-    GlobalArgs.blocksize = 128;  /* or 256 */
-    GlobalArgs.threshold = 0.02; /* or .015 */
+    GlobalArgs.blocksize = 128; 
+    GlobalArgs.threshold = 0.050; 
     GlobalArgs.nbthreads = 60;
     GlobalArgs.verboseflag = 0;
     GlobalArgs.helpflag = 0;
