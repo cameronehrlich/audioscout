@@ -1,11 +1,53 @@
-How to use Java bindings:
-1) Configure pHash with Java support (--enable-java)
-2) Build pHash
-3) Compile Java classes if not done already: javac *.java
-4) Install pHash (make install)
-5) java -Djava.library.path=/usr/local/lib pHash -mh img1.jpg img2.jpg
-	See pHash.java for additional options
+Java Bindings
+-------------------------------------------------
 
-	Note: When using the MVP storage functions, the number of hashes needed to create the tree is the leaf 
-	capacity + 3 (28 by default).
+To build and install the jni shared library,
+
+cmake .
+make
+make install
+
+To build the java classes,
+
+ant compile
+
+
+To build the AudioScout client application,
+
+ant auscout
+
+
+You may need to adjust the classpath in the to 
+indicate the location of the java zeromq classes.
+Right now, it assumes /usr/local/share/java/zmq.jar
+
+You may also need to edit the name of the library to load
+in the static load section of org/phash/AudioHash.java.
+
+
+The class files should be in build/ dir.  
+
+
+To run test program,
+
+java -Djava.library.path=/usr/local/lib -cp ".:dist/*:build/test/*"
+                            org.phash.TestAudio <audiofile>
+
+
+To run auscout client, 
+
+java -Djava.library.path=/usr/local/lib -cp ".:dist/*:build/auscoutclient:/usr/local/share/java/zmq.jar" 
+                              org.phash.phashaudio.AudioScoutClient
+
+This will print the options available.
+
+
+dependencies
+------------------------------------------------
+
+libpHashAudio.so
+libAudioData.so
+JDK 1.7.0
+zeromq 2.1.0
+jzmq (java bindings for zeromq)
 
