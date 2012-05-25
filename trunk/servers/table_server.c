@@ -149,7 +149,7 @@ void tableserver_usage(){
     fprintf(stdout," -l <log level>          log level 0 and 1  to 8(0,LOG_EMERG...LOG_DEBUG\n");
     fprintf(stdout,"                         log levels correspond to those in syslog.h\n");
     fprintf(stdout," -b <block size>         blocksize for performing lookup,  default 128\n");
-    fprintf(stdout," -t <threshold>          threshold for performing lookup, default 0.020\n");
+    fprintf(stdout," -t <threshold>          threshold for performing lookup, default 0.050\n");
     fprintf(stdout," -n <threads>            number of worker threads, default is 60\n");
     fprintf(stdout," -i <index name>         path and name of index file - mandatory\n");
 }  
