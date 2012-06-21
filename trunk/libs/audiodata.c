@@ -365,6 +365,7 @@ float *readaudio_snd(const char *filename, long *sr, unsigned int *buflen,\
 	buf[indx++] /= sf_info.channels;
     }
     free(inbuf);
+    sf_close(sndfile);
 
     return buf;
 }
