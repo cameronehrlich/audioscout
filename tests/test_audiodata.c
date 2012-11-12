@@ -27,19 +27,16 @@
 
 
 static const char *testfile = "./testdir/sample.mp3";
-
+static const char *amrtestfile = "./testdir/amr-1.amr";
+static const char *amrtestfile2 = "./testdir/amr-2.amr";
 
 int main(int argc, char **argv){
-
-
   float *sigbuf = (float*)malloc(1<<28);
   const unsigned int buflen = (1<<28)/sizeof(float);
-
 
   AudioMetaData mdata;
   float *buf = NULL;
   unsigned int len;
-
 
   float nbsecs = 30.0f; /* full audio */ 
   int sr = 5512;
@@ -86,6 +83,33 @@ int main(int argc, char **argv){
   assert(len == 671771);
   printf("ok\n");
   
+  free_mdata(&mdata);
+  if (buf != sigbuf) free(buf);
+
+  buf = NULL;
+  sr = 6000;
+  nbsecs = 0.0f;
+  len = buflen;
+
+  printf("testing %s @ sr = %d for %f seconds...\n", amrtestfile, sr, nbsecs);
+  buf = readaudio(amrtestfile, sr, sigbuf, &len, nbsecs, &mdata, &error);
+  assert(buf);
+  assert(len == 38520);
+  printf("ok\n");
+
+  free_mdata(&mdata);
+  if (buf != sigbuf) free(buf);
+
+  buf = NULL;
+  sr = 8000;
+  nbsecs = 0.0f;
+  len = buflen;
+  printf("testing %s @ sr = %d for %f seconds...\n", amrtestfile2, sr, nbsecs);
+  buf = readaudio(amrtestfile2, sr, sigbuf, &len, nbsecs, &mdata, &error);
+  assert(buf);
+  assert(len == 58400);
+  printf("ok\n");
+
   free_mdata(&mdata);
   if (buf != sigbuf) free(buf);
 

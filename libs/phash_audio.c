@@ -227,9 +227,10 @@ char** readfilenames(const char *dirname,unsigned int *nbfiles){
 
     /* alloc list of files */
     char **files = (char**)malloc((*nbfiles)*sizeof(char*));
-    if (!files)
+    if (!files){
+	closedir(dir);
 	return NULL;
-
+    }
     int index = 0;
     char path[FILENAME_MAX];
     path[0] = '\0';
@@ -499,6 +500,7 @@ static int GetCandidates2(uint32_t hashvalue, uint8_t *toggles, const unsigned i
 
 static int GetCandidates(uint32_t hashvalue, uint8_t *toggles, const unsigned int P, uint32_t **pcands, int *nbcandidates){
     int n = 1 << P;
+    n = (n > 0) ? n : 1;
     *nbcandidates = n;
 
     *pcands = (uint32_t*)malloc(n*sizeof(uint32_t));
