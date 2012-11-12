@@ -473,9 +473,7 @@ int main(int argc, char **argv){
 	fprintf(stdout," %s is unknown command\n", GlobalArgs.cmd);
 	display_usage();
     }
-
-
-    
+   
     return 0;
 
 }

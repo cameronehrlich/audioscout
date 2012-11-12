@@ -23,6 +23,10 @@
 #include <fcntl.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "serialize.h"
 #include "zmq.h"
 #include "audiodata.h"
@@ -31,6 +35,10 @@
 
 #ifdef HAVE_MPG123
 #include "mpg123.h"
+#endif
+
+#ifdef HAVE_AMR
+#include "opencore-amrnb/interf_dec.h"
 #endif
 
 AUDIODATA_EXPORT
@@ -298,6 +306,70 @@ float* readaudio_mp3(const char *filename,long *sr, unsigned int *buflen,\
 }
 #endif /*HAVE_MPG123*/
 
+#ifdef HAVE_AMR
+
+const int sizes[] = { 12, 13, 15, 17, 19, 20, 26, 31, 5, 6, 5, 5, 0, 0, 0, 0 };
+
+static
+float* readaudio_amr(const char *file, long *sr, unsigned int *buflen,
+               const float nbsecs, AudioMetaData *mdata, int *error){
+    char header[6];
+    size_t n;
+    void *amr = NULL;
+    int length = (nbsecs > 0.0f) ? (int)nbsecs*60*8000 : 8000*60*60;
+    float *buf = malloc(length*sizeof(float));
+    if (buf == NULL) return NULL;
+
+    *sr = 8000UL;
+
+    int amrfd = open(file, O_RDONLY, S_IRUSR);
+    if (amrfd < 0){
+	*error = errno;
+	free(buf);
+	return NULL;
+    }
+    n = read(amrfd, header, 6);
+    if (n != 6 || memcmp(header, "#!AMR\n", 6)){
+	free(buf);
+	close(amrfd);
+	*error = errno;
+	return NULL;
+    }
+
+    int16_t outbuffer[160];
+    uint8_t buffer[500];
+    int size, i, index = 0;
+    amr = Decoder_Interface_init();
+    while (1){
+	/* read mode byte */
+	n = read(amrfd, buffer, 1);
+	if (n <= 0) break;
+
+	/* find packet size */
+	size = sizes[(buffer[0] >> 3) & 0x0f];
+
+	n = read(amrfd, buffer + 1, size);
+	if (n != size) break;
+
+	/* decode packet */
+	Decoder_Interface_Decode(amr, buffer, outbuffer, 0);
+
+	for (i=0;i<160;i++){
+	    buf[index++] = (float)outbuffer[i]/(float)SHRT_MAX;
+	}
+
+	if (index > length) break;
+    }
+
+    *buflen = index;
+    close(amrfd);
+    Decoder_Interface_exit(amr);
+
+    return buf;
+}
+
+#endif /* HAVE_AMR */
+
 static
 float *readaudio_snd(const char *filename, long *sr, unsigned int *buflen,\
 		     const float nbsecs, AudioMetaData *mdata, int *error){
@@ -374,14 +446,14 @@ AUDIODATA_EXPORT
 float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int *buflen,\
                  const float nbsecs, AudioMetaData *mdata, int *error)
 {
-  SRC_STATE *src_state;
+  SRC_STATE *src_state = NULL;
   SRC_DATA src_data;
   long orig_sr;
   unsigned int orig_length = 0, outbufferlength = 0;
-  const char *suffix;
-  char *name;
+  const char *suffix = NULL;
+  char *name = NULL;
   float *inbuffer = NULL, *outbuffer = NULL;
-  double sr_ratio;
+  double sr_ratio = 1.0f;
   *error = PHERR_SUCCESS;
 
   if (filename == NULL || buflen == NULL) {
@@ -394,19 +466,26 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
   suffix = strrchr(filename, '.');
 
   if (*suffix != '\0' && !strncasecmp(suffix+1, "mp3",3)) {
+
 #ifdef HAVE_MPG123
     inbuffer = readaudio_mp3(filename, &orig_sr, &orig_length, nbsecs, mdata, error);
 #else
-    /* no mp3 support compiled in */
     return NULL;
-#endif /* HAVE_MPG123 */
+#endif
+
+  } else if (*suffix != '\0' && !strncasecmp(suffix+1, "amr", 3)) {
+
+#ifdef HAVE_AMR
+      inbuffer = readaudio_amr(filename, &orig_sr, &orig_length, nbsecs, mdata, error);
+#else
+      return NULL;
+#endif
+
   } else {
     inbuffer = readaudio_snd(filename, &orig_sr, &orig_length, nbsecs, mdata, error);
   }  
 
-  if (inbuffer == NULL){
-    return NULL;
-  }
+  if (inbuffer == NULL) return NULL;
 
   /* if no data extracted for title, use the file name */ 
   if (mdata && mdata->title2 == NULL){
