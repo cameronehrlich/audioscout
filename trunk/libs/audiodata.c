@@ -311,29 +311,61 @@ float* readaudio_mp3(const char *filename,long *sr, unsigned int *buflen,\
 const int sizes[] = { 12, 13, 15, 17, 19, 20, 26, 31, 5, 6, 5, 5, 0, 0, 0, 0 };
 
 static
-float* readaudio_amr(const char *file, long *sr, unsigned int *buflen,
-               const float nbsecs, AudioMetaData *mdata, int *error){
+int count_amr_samples(const char *file){
     char header[6];
     size_t n;
-    void *amr = NULL;
-    int length = (nbsecs > 0.0f) ? (int)nbsecs*60*8000 : 8000*60*60;
-    float *buf = malloc(length*sizeof(float));
-    if (buf == NULL) return NULL;
+    int amrfd = open(file, O_RDONLY, S_IRUSR);
+    if (amrfd < 0)return -1;
+    
+    n = read(amrfd, header, 6);
+    if (n != 6 || memcmp(header, "#!AMR\n", 6)){
+	close(amrfd);
+	return -1;
+    }
 
-    *sr = 8000UL;
+    uint8_t buffer[500];
+    int size, index = 0;
+    while (1){
+	n = read(amrfd, buffer, 1);
+	if (n <= 0) break;
+	size = sizes[(buffer[0] >> 3) & 0x0f];
+	n = read(amrfd, buffer + 1, size);
+	if (n != size) break;
+	index += 160;
+    }
+
+    close(amrfd);
+    return index;
+}
+
+static
+float* readaudio_amr(const char *file, long *sr, unsigned int *buflen, 
+                     const float nbsecs, AudioMetaData *mdata,int *error){
+    char header[6];
+    size_t n;
+    void *amr;
+    *buflen = 0;
+    *sr = 8000;
+    int nbsamples = count_amr_samples(file);
+    if (nbsamples <= 0) return NULL;
+
+    nbsamples = (nbsecs <= 0.0f) ? nbsamples : 8000*(int)nbsecs;
+    
+    float *buf = malloc(nbsamples*sizeof(float));
+    if (buf == NULL){
+	return NULL;
+    }
 
     int amrfd = open(file, O_RDONLY, S_IRUSR);
     if (amrfd < 0){
-	*error = errno;
 	free(buf);
 	return NULL;
     }
+
     n = read(amrfd, header, 6);
     if (n != 6 || memcmp(header, "#!AMR\n", 6)){
-	free(buf);
 	close(amrfd);
-	*error = errno;
-	return NULL;
+	free(buf);
     }
 
     int16_t outbuffer[160];
@@ -341,11 +373,9 @@ float* readaudio_amr(const char *file, long *sr, unsigned int *buflen,
     int size, i, index = 0;
     amr = Decoder_Interface_init();
     while (1){
-	/* read mode byte */
 	n = read(amrfd, buffer, 1);
 	if (n <= 0) break;
 
-	/* find packet size */
 	size = sizes[(buffer[0] >> 3) & 0x0f];
 
 	n = read(amrfd, buffer + 1, size);
@@ -358,12 +388,12 @@ float* readaudio_amr(const char *file, long *sr, unsigned int *buflen,
 	    buf[index++] = (float)outbuffer[i]/(float)SHRT_MAX;
 	}
 
-	if (index > length) break;
+	if (index >= nbsamples) break;
     }
 
     *buflen = index;
-    close(amrfd);
     Decoder_Interface_exit(amr);
+    close(amrfd);
 
     return buf;
 }

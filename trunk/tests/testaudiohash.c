@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <unistd.h>
 
 #ifdef _WIN32
 #define BUILD_EXE
@@ -54,7 +55,7 @@ int main (int argc, char **argv){
   AudioHashStInfo *hash_st = NULL;
 
   clock_t total = 0;
-  unsigned int i;
+  unsigned int i,j;
   int err;
   for (i=0;i<nbfiles;i++){
     printf("file[%u]: %s\n", i, files[i]);
@@ -73,6 +74,7 @@ int main (int argc, char **argv){
       printf("unable to get hash \n");
       break;
     }
+
     clock_t end = clock();
     clock_t dur = end - start;
     total += dur;
@@ -80,9 +82,10 @@ int main (int argc, char **argv){
     printf("hash %p, nbframes %u, %f seconds\n", hash, nbframes,secs);
 
     ph_free(hash);
-    ph_hashst_free(hash_st);
     ph_free(buf);
   }
+
+  ph_hashst_free(hash_st);
 
   double average_seconds = (double)total/(double)nbfiles/(double)CLOCKS_PER_SEC;
   printf("ave hash time %f seconds\n", average_seconds);
