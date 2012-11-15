@@ -263,7 +263,7 @@ void ph_free(void * ptr){
 PHASH_EXPORT
 void ph_hashst_free(AudioHashStInfo *ptr){
   int i;
-  if (ptr){
+  if (ptr != NULL){
       for (i=0;i<nfilts;i++){
 	  free(ptr->wts[i]);
       }

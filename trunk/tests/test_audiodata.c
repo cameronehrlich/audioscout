@@ -40,8 +40,9 @@ int main(int argc, char **argv){
 
   float nbsecs = 30.0f; /* full audio */ 
   int sr = 5512;
+  int error, i;
+
   len = buflen;
-  int error;
 
   printf("testing  %s @ sr %d, for %f seconds...\n", testfile, sr, nbsecs);
   buf = readaudio(testfile, sr, sigbuf, &len, nbsecs, &mdata, &error);
@@ -95,6 +96,7 @@ int main(int argc, char **argv){
   buf = readaudio(amrtestfile, sr, sigbuf, &len, nbsecs, &mdata, &error);
   assert(buf);
   assert(len == 38520);
+  printf("samples %d\n", len);
   printf("ok\n");
 
   free_mdata(&mdata);
@@ -108,6 +110,7 @@ int main(int argc, char **argv){
   buf = readaudio(amrtestfile2, sr, sigbuf, &len, nbsecs, &mdata, &error);
   assert(buf);
   assert(len == 58400);
+  printf("samples %d\n", len);
   printf("ok\n");
 
   free_mdata(&mdata);
