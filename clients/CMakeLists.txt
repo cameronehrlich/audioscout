@@ -4,7 +4,7 @@ project(AudioScoutClient)
 set(AudioScoutClient_MAJOR_VERSION 1)
 set(AudioScoutClient_MINOR_VERSION 0)
 
-add_definitions("-g -O0")
+add_definitions("-g -O3")
 
 include_directories("${PROJECT_SOURCE_DIR}/../libs")
 link_directories("${PROJECT_BINARY_DIR}/../libs")
