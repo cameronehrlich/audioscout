@@ -40,16 +40,14 @@
 #define TOGGLE_BIT(word,b)     (0x80000000 >> b)^word
 
 static const unsigned int nfilts = 33;
-static const double MaxFreq = 3000.0;
 static const double BarkWidth = 1.06;
+
 static const double BarkFreqs[33] = {   50.0,  75.0,  100.0,  125.0,  150.0,   200.0,   250.0,   300.0, 
                                        350.0, 400.0,  450.0,  510.0,  570.0,   635.0,   700.0,   770.0, 
                                        840.0, 920.0, 1000.0, 1085.0, 1170.0,  1270.0,  1370.0,  1485.0, 
                                       1600.0,1725.0, 1850.0, 2000.0, 2150.0,  2325.0,  2500.0,  2700.0, 
                                       2900.0
                                      };
-
-
 
 #ifndef JUST_AUDIOHASH
 
@@ -273,17 +271,18 @@ void ph_hashst_free(AudioHashStInfo *ptr){
   }
 }
 
-static double** GetWts(const int nfft_half){
+static double** GetWts(const sr, const int nfft_half){
     double **wts = (double**)malloc(nfilts*sizeof(double*));
 
     int i, j;
+    float maxfreq = (float)(sr/2);
     double f_bark_mid, mdouble, bark_diff, lof, hif;
     double *binbarks = (double*)malloc(nfft_half*sizeof(double));
     if (binbarks == NULL) return NULL;
 
     for (i=0; i < nfft_half;i++){
 	/* frequency of point on axis */
-	double temp = i*MaxFreq/(double)nfft_half;
+	double temp = i*maxfreq/(double)nfft_half;
 
 	/* asinh implentation freq => bark number conversion */
 	/* approx of: bark = 6*arcsinh(freq/600)             */
@@ -345,23 +344,36 @@ static void sort_barkdiffs(double *barkdiffs,uint8_t *bits,unsigned int length){
     }
 }
 
+int getframelength(int sr, float duration){
+    int count = 0, nbsamples = (int)(duration*(float)sr);
+    while (nbsamples != 0){
+	nbsamples >>= 1;
+	count++;
+    }
+    count--;
+    return (0x0001 << count);
+}
+
 int audiohash(float *buf, uint32_t **hash, double ***coeffs, uint8_t ***toggles, 
               unsigned int *nbcoeffs, unsigned int *nbframes, double *minB, double *maxB, 
               unsigned int buflen, unsigned int P, int sr, AudioHashStInfo **hash_st){
-    const int framelength = 2048;
-    const int nfft = framelength;
-    const int nfft_half = nfft/2;
+    const float dur = 0.40f;
+    int framelength, nfft, nfft_half;
 
-    if (buf == NULL || nbframes == NULL || hash == NULL || buflen == 0 || hash_st == NULL) return -1;
+    if (buf == NULL || nbframes == NULL || hash == NULL || buflen == 0 || hash_st == NULL || sr < 6000) return -1;
 
     int i,j;
     if (*hash_st == NULL){
 	*hash_st = (AudioHashStInfo*)malloc(sizeof(AudioHashStInfo));
+	framelength = getframelength(sr, dur);
 	(*hash_st)->framelength = framelength;
 	(*hash_st)->window = GetHammingWindow(framelength);
-	(*hash_st)->wts = GetWts(nfft_half);
+	(*hash_st)->wts = GetWts(sr, framelength/2);
     }
     
+    framelength = (*hash_st)->framelength;
+    nfft = framelength;
+    nfft_half = framelength/2;
     double *window = (*hash_st)->window;
     double **wts   = (*hash_st)->wts;
     double *frame = (double*)malloc(framelength*sizeof(double));
