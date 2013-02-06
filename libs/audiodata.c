@@ -496,7 +496,7 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
 
   suffix = strrchr(filename, '.');
 
-  if (*suffix != '\0' && !strncasecmp(suffix+1, "mp3",3)) {
+  if (*suffix != '\0' && !strncasecmp(suffix+1, "mp3",3) && !strncasecmp(suffix+1, "mp2", 3)) {
 
 #ifdef HAVE_MPG123
     inbuffer = readaudio_mp3(filename, &orig_sr, &orig_length, nbsecs, mdata, error);
