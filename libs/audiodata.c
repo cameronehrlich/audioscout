@@ -38,6 +38,11 @@
 #include "mpg123.h"
 #endif
 
+#if (ZMQ_VERSION_MAJOR == 3 && ZMQ_VERSION_MINOR >= 2)
+#define zmq_send zmq_sendmsg 
+#define zmq_recv zmq_recvmsg
+#endif
+
 #ifdef HAVE_AMR
 #include "opencore-amrnb/interf_dec.h"
 #endif
@@ -558,7 +563,7 @@ float* readaudio(const char *filename, const int sr, float *sigbuf, unsigned int
      return NULL;
   }
 
-  src_data;
+
   src_data.data_in = inbuffer;
   src_data.data_out = outbuffer;
   src_data.input_frames = orig_length;
