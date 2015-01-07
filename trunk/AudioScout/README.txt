@@ -84,6 +84,7 @@ Zeromq 3.2 with jzmq java bindings
        (libzmq.so and libjzmq.so)
 (http://www.zeromq.org/intro:get-the-software)
 
+
 AudioData  c library for AudioScout example client program (for reading audio files)
    Necessary for reading audio files.
    Get here: [http://code.google.com/p/audioscout/downloads/list]
