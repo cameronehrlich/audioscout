@@ -55,7 +55,8 @@ public class AudioHasher {
 
     public int getFrameLength(double dur, int sr){
 	int nbsamples = (int)(dur*(float)sr);
-	return Integer.highestOneBit(nbsamples);
+	int fl = Integer.highestOneBit(nbsamples);
+	return fl;
     }
 
     private double[] createHammingWindow(int fl){
