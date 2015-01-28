@@ -1,2 +1,0 @@
-01/16/2015 added unit test with resources/sample.txt file
-08/13/2014 JPHashAudio init
